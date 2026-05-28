@@ -61,7 +61,8 @@ fun HistoryScreen(navController: NavController) {
             ) {
                 items(historyItems) { item ->
                     HistoryRow(item = item, onClick = {
-                        navController.navigate("player?url=\${item.url}")
+                        val encodedUrl = java.net.URLEncoder.encode(item.url, java.nio.charset.StandardCharsets.UTF_8.toString())
+                        navController.navigate("player?url=$encodedUrl")
                     })
                 }
             }

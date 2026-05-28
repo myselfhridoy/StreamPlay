@@ -44,11 +44,6 @@ fun FavoritesScreen(navController: NavController) {
         topBar = {
             TopAppBar(
                 title = { Text("Favorites", color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundDark)
             )
         },
@@ -71,7 +66,8 @@ fun FavoritesScreen(navController: NavController) {
             ) {
                 items(favorites) { fav ->
                     FavoriteItem(fav = fav, onClick = {
-                        navController.navigate("player?url=\${fav.url}")
+                        val encodedUrl = java.net.URLEncoder.encode(fav.url, java.nio.charset.StandardCharsets.UTF_8.toString())
+                        navController.navigate("player?url=$encodedUrl")
                     })
                 }
             }

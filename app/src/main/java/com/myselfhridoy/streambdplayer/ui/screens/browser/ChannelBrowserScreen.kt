@@ -121,7 +121,8 @@ fun ChannelBrowserScreen(
                         items(state.channels) { channel ->
                             ChannelItem(channel = channel, onClick = {
                                 // Navigate to Player
-                                navController.navigate("player?url=\${channel.url}")
+                                val encodedUrl = java.net.URLEncoder.encode(channel.url, java.nio.charset.StandardCharsets.UTF_8.toString())
+                                navController.navigate("player?url=$encodedUrl")
                             })
                         }
                     }

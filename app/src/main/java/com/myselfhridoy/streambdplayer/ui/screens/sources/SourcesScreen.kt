@@ -74,7 +74,9 @@ fun SourcesScreen(navController: NavController) {
                         SourceItem(
                             playlist = playlist,
                             onClick = {
-                                navController.navigate("channelBrowser?url=\${playlist.url}&name=\${playlist.name}")
+                                val encodedUrl = java.net.URLEncoder.encode(playlist.url, java.nio.charset.StandardCharsets.UTF_8.toString())
+                                val encodedName = java.net.URLEncoder.encode(playlist.name, java.nio.charset.StandardCharsets.UTF_8.toString())
+                                navController.navigate("channelBrowser?url=$encodedUrl&name=$encodedName")
                             },
                             onDelete = {
                                 scope.launch { dao.deletePlaylist(playlist.id) }
