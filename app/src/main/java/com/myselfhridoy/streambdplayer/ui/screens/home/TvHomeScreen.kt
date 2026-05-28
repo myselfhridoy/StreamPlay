@@ -40,7 +40,7 @@ fun TvHomeScreen(navController: NavController) {
                     .background(if (drawerValue == DrawerValue.Open) SurfaceDark else Color.Transparent)
                     .padding(16.dp)
             ) {
-                androidx.tv.foundation.lazy.list.TvLazyColumn {
+                androidx.compose.foundation.lazy.LazyColumn {
                     items(navItems.size) { index ->
                         val item = navItems[index]
                         NavigationDrawerItem(
