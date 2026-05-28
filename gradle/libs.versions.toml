@@ -8,6 +8,8 @@ composeBom = "2024.02.00"
 composeCompiler = "1.5.10"
 media3 = "1.2.1"
 libvlc = "3.5.4"
+room = "2.6.1"
+ksp = "1.9.22-1.0.17"
 tvCompose = "1.0.0-alpha10"
 
 [libraries]
@@ -27,6 +29,11 @@ media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", versi
 media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3" }
 libvlc = { group = "org.videolan.android", name = "libvlc-all", version.ref = "libvlc" }
 
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
