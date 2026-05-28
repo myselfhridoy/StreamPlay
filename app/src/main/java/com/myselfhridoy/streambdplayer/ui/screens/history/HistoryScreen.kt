@@ -61,7 +61,7 @@ fun HistoryScreen(navController: NavController) {
             ) {
                 items(historyItems) { item ->
                     HistoryRow(item = item, onClick = {
-                        navController.navigate("player?url=\${item.mediaUrl}")
+                        navController.navigate("player?url=\${item.url}")
                     })
                 }
             }
@@ -90,7 +90,7 @@ fun HistoryRow(item: HistoryItem, onClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(item.title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(item.name ?: "Unknown Channel", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 
                 val dateStr = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(item.timestamp))
                 Text(dateStr, color = Color.Gray, fontSize = 12.sp)
