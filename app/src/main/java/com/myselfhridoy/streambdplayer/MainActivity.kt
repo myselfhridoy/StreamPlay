@@ -9,9 +9,11 @@ import androidx.compose.ui.Modifier
 import com.myselfhridoy.streambdplayer.ui.navigation.AppNavigation
 import com.myselfhridoy.streambdplayer.ui.theme.StreamBDPlayerTheme
 import com.myselfhridoy.streambdplayer.ui.theme.StreamBDPlayerTvTheme
+import androidx.tv.material3.ExperimentalTvMaterial3Api
 import com.myselfhridoy.streambdplayer.utils.DeviceUtils
 
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {

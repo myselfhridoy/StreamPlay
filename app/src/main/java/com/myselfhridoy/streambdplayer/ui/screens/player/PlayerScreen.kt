@@ -197,7 +197,7 @@ private fun enterPiP(context: Context) {
             val params = PictureInPictureParams.Builder()
                 .setAspectRatio(Rational(16, 9))
                 .build()
-            activity.enterPictureInPictureMode(params)
+            activity?.enterPictureInPictureMode(params)
         }
     }
 }
