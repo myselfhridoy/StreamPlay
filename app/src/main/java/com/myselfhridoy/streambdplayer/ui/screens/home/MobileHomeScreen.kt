@@ -4,9 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
@@ -26,15 +26,17 @@ import androidx.navigation.NavController
 import com.myselfhridoy.streambdplayer.ui.theme.BackgroundDark
 import com.myselfhridoy.streambdplayer.ui.theme.SurfaceDark
 
-import com.myselfhridoy.streambdplayer.ui.screens.sources.SourcesScreen
-import com.myselfhridoy.streambdplayer.ui.screens.history.HistoryScreen
+import com.myselfhridoy.streambdplayer.ui.screens.network.NetworkScreen
 import com.myselfhridoy.streambdplayer.ui.screens.favorites.FavoritesScreen
+import com.myselfhridoy.streambdplayer.ui.screens.home.TmdbHomeScreen
+import com.myselfhridoy.streambdplayer.ui.screens.categories.CategoriesScreen
 
 data class NavItem(val title: String, val icon: ImageVector)
 
 val navItems = listOf(
-    NavItem("Sources", Icons.Default.Home),
-    NavItem("History", Icons.Default.List),
+    NavItem("Home", Icons.Default.Home),
+    NavItem("Categories", Icons.Default.Dashboard),
+    NavItem("Network", Icons.Default.CloudDownload),
     NavItem("Favorites", Icons.Default.Star),
     NavItem("Settings", Icons.Default.Settings)
 )
@@ -65,10 +67,11 @@ fun MobileHomeScreen(navController: NavController) {
                 .background(BackgroundDark)
         ) {
             when (selectedItem) {
-                0 -> SourcesScreen(navController)
-                1 -> HistoryScreen(navController)
-                2 -> FavoritesScreen(navController)
-                3 -> Text(text = "Settings Coming Soon", color = androidx.compose.ui.graphics.Color.White, modifier = Modifier.padding(16.dp))
+                0 -> TmdbHomeScreen(navController)
+                1 -> CategoriesScreen(navController)
+                2 -> NetworkScreen(navController)
+                3 -> FavoritesScreen(navController)
+                4 -> Text(text = "Settings Coming Soon", color = androidx.compose.ui.graphics.Color.White, modifier = Modifier.padding(16.dp))
             }
         }
     }

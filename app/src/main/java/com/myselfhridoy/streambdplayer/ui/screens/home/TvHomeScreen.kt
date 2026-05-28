@@ -21,9 +21,10 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.NavigationDrawer
 import androidx.tv.material3.NavigationDrawerItem
 import androidx.tv.material3.Text
-import com.myselfhridoy.streambdplayer.ui.screens.sources.SourcesScreen
-import com.myselfhridoy.streambdplayer.ui.screens.history.HistoryScreen
+import com.myselfhridoy.streambdplayer.ui.screens.network.NetworkScreen
 import com.myselfhridoy.streambdplayer.ui.screens.favorites.FavoritesScreen
+import com.myselfhridoy.streambdplayer.ui.screens.home.TmdbHomeScreen
+import com.myselfhridoy.streambdplayer.ui.screens.categories.CategoriesScreen
 import com.myselfhridoy.streambdplayer.ui.theme.BackgroundDark
 import com.myselfhridoy.streambdplayer.ui.theme.SurfaceDark
 
@@ -64,10 +65,11 @@ fun TvHomeScreen(navController: NavController) {
                 .padding(start = 80.dp) // Leave space for closed drawer
         ) {
             when (selectedItem) {
-                0 -> SourcesScreen(navController)
-                1 -> HistoryScreen(navController)
-                2 -> FavoritesScreen(navController)
-                3 -> Text(text = "Settings Coming Soon", color = Color.White, modifier = Modifier.padding(16.dp))
+                0 -> TmdbHomeScreen(navController)
+                1 -> CategoriesScreen(navController)
+                2 -> NetworkScreen(navController)
+                3 -> FavoritesScreen(navController)
+                4 -> Text(text = "Settings Coming Soon", color = Color.White, modifier = Modifier.padding(16.dp))
             }
         }
     }

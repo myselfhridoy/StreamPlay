@@ -1,4 +1,4 @@
-package com.myselfhridoy.streambdplayer.ui.screens.sources
+package com.myselfhridoy.streambdplayer.ui.screens.network
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,7 +30,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SourcesScreen(navController: NavController) {
+fun NetworkScreen(navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val dao = remember { AppDatabase.getDatabase(context).playlistDao() }
@@ -42,7 +43,12 @@ fun SourcesScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Custom Sources", color = Color.White) },
+                title = { Text("Network", color = Color.White) },
+                actions = {
+                    IconButton(onClick = { navController.navigate("history") }) {
+                        Icon(Icons.Default.History, contentDescription = "History", tint = Color.White)
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundDark)
             )
         },

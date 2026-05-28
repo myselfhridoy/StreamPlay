@@ -13,6 +13,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.myselfhridoy.streambdplayer.data.local.PreferencesManager
 import com.myselfhridoy.streambdplayer.ui.screens.browser.ChannelBrowserScreen
+import com.myselfhridoy.streambdplayer.ui.screens.history.HistoryScreen
 import com.myselfhridoy.streambdplayer.ui.screens.home.HomeScreen
 import com.myselfhridoy.streambdplayer.ui.screens.onboarding.OnboardingScreen
 import com.myselfhridoy.streambdplayer.ui.screens.player.PlayerScreen
@@ -61,6 +62,9 @@ fun AppNavigation() {
         }
         composable("player?url={url}") { backStackEntry ->
             PlayerScreen(navController = navController)
+        }
+        composable("history") {
+            HistoryScreen(navController = navController)
         }
     }
 }
