@@ -24,12 +24,16 @@ import androidx.navigation.NavController
 import com.myselfhridoy.streambdplayer.ui.theme.BackgroundDark
 import com.myselfhridoy.streambdplayer.ui.theme.SurfaceDark
 
+import com.myselfhridoy.streambdplayer.ui.screens.sources.SourcesScreen
+import com.myselfhridoy.streambdplayer.ui.screens.history.HistoryScreen
+import com.myselfhridoy.streambdplayer.ui.screens.favorites.FavoritesScreen
+
 data class NavItem(val title: String, val icon: ImageVector)
 
 val navItems = listOf(
-    NavItem("Home", Icons.Default.Home),
-    NavItem("Channels", Icons.Default.List),
-    NavItem("Search", Icons.Default.Search),
+    NavItem("Sources", Icons.Default.Home),
+    NavItem("History", Icons.Default.List),
+    NavItem("Favorites", Icons.Default.Star),
     NavItem("Settings", Icons.Default.Settings)
 )
 
@@ -58,12 +62,12 @@ fun MobileHomeScreen(navController: NavController) {
                 .padding(innerPadding)
                 .background(BackgroundDark)
         ) {
-            // Content based on selectedItem
-            // 0 -> Channels list
-            // 1 -> Playlists
-            // 2 -> Search
-            // 3 -> Settings
-            Text(text = "Mobile View: \${navItems[selectedItem].title}", color = androidx.compose.ui.graphics.Color.White)
+            when (selectedItem) {
+                0 -> SourcesScreen(navController)
+                1 -> HistoryScreen(navController)
+                2 -> FavoritesScreen(navController)
+                3 -> Text(text = "Settings Coming Soon", color = androidx.compose.ui.graphics.Color.White, modifier = Modifier.padding(16.dp))
+            }
         }
     }
 }

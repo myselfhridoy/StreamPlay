@@ -4,11 +4,15 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.myselfhridoy.streambdplayer.data.models.Favorite
 import com.myselfhridoy.streambdplayer.data.models.HistoryItem
+import com.myselfhridoy.streambdplayer.data.models.Playlist
 
-@Database(entities = [HistoryItem::class], version = 1, exportSchema = false)
+@Database(entities = [HistoryItem::class, Playlist::class, Favorite::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun historyDao(): HistoryDao
+    abstract fun playlistDao(): PlaylistDao
+    abstract fun favoriteDao(): FavoriteDao
 
     companion object {
         @Volatile
@@ -20,7 +24,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "streambd_database"
-                ).build()
+                ).fallbackToDestructiveMigration().build()
                 INSTANCE = instance
                 instance
             }

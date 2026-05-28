@@ -21,6 +21,9 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.NavigationDrawer
 import androidx.tv.material3.NavigationDrawerItem
 import androidx.tv.material3.Text
+import com.myselfhridoy.streambdplayer.ui.screens.sources.SourcesScreen
+import com.myselfhridoy.streambdplayer.ui.screens.history.HistoryScreen
+import com.myselfhridoy.streambdplayer.ui.screens.favorites.FavoritesScreen
 import com.myselfhridoy.streambdplayer.ui.theme.BackgroundDark
 import com.myselfhridoy.streambdplayer.ui.theme.SurfaceDark
 
@@ -60,7 +63,12 @@ fun TvHomeScreen(navController: NavController) {
                 .background(BackgroundDark)
                 .padding(start = 80.dp) // Leave space for closed drawer
         ) {
-            Text(text = "TV View: \${navItems[selectedItem].title}", color = Color.White)
+            when (selectedItem) {
+                0 -> SourcesScreen(navController)
+                1 -> HistoryScreen(navController)
+                2 -> FavoritesScreen(navController)
+                3 -> Text(text = "Settings Coming Soon", color = Color.White, modifier = Modifier.padding(16.dp))
+            }
         }
     }
 }
