@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -222,15 +223,28 @@ fun ChannelBrowserScreen(
 
 @Composable
 fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
-    Surface(
-        color = if (isSelected) Color.White else SurfaceDark,
-        shape = RoundedCornerShape(20.dp),
-        modifier = Modifier.clickable { onClick() }
+    val backgroundModifier = if (isSelected) {
+        Modifier.background(
+            Brush.horizontalGradient(
+                colors = listOf(Color(0xFFE50914), Color(0xFF9E060E))
+            ),
+            shape = RoundedCornerShape(20.dp)
+        )
+    } else {
+        Modifier.background(SurfaceDark, shape = RoundedCornerShape(20.dp))
+    }
+
+    Box(
+        modifier = Modifier
+            .clickable { onClick() }
+            .then(backgroundModifier)
+            .padding(horizontal = 20.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            color = if (isSelected) Color.Black else Color.White,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            color = Color.White,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
         )
     }
 }

@@ -206,9 +206,9 @@ fun TmdbHomeContent(
 fun MediaCard(item: MediaItem, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .width(120.dp)
-            .height(180.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .width(130.dp)
+            .height(195.dp)
+            .clip(RoundedCornerShape(12.dp))
             .background(SurfaceDark)
             .clickable { onClick() }
     ) {
@@ -217,6 +217,30 @@ fun MediaCard(item: MediaItem, onClick: () -> Unit) {
             contentDescription = item.title ?: item.name,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
+        )
+        
+        // Gradient overlay for title
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, Color.Transparent, Color(0xDD000000))
+                    )
+                )
+        )
+        
+        // Title text at bottom
+        Text(
+            text = item.title ?: item.name ?: "",
+            color = Color.White,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(8.dp)
         )
         
         // Rating Badge

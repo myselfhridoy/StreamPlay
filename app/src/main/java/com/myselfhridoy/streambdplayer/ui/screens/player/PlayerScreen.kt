@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
@@ -21,6 +22,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.animation.core.*
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +33,9 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import com.myselfhridoy.streambdplayer.utils.PlaylistManager
+import com.myselfhridoy.streambdplayer.utils.TokenParser
+import com.google.gson.Gson
+import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalContext
@@ -42,6 +48,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
+import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
@@ -253,17 +260,31 @@ fun PlayerScreen(
                     )
                     
                     if (!isVod) {
-                        Surface(
-                            color = Color(0x44FF0000),
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                text = "🔴 LIVE",
-                                color = Color.Red,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        val infiniteTransition = rememberInfiniteTransition()
+                        val alpha by infiniteTransition.animateFloat(
+                            initialValue = 0.3f,
+                            targetValue = 1f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(1000, easing = LinearEasing),
+                                repeatMode = RepeatMode.Reverse
                             )
+                        )
+                        Box(
+                            modifier = Modifier
+                                .background(Color(0x33FF0000), RoundedCornerShape(16.dp))
+                                .border(1.dp, Color(0x88FF0000), RoundedCornerShape(16.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .background(Color.Red.copy(alpha = alpha), CircleShape)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("LIVE", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
                         }
                     }
                 }
@@ -281,6 +302,40 @@ fun PlayerScreen(
                                 val newPos = (exoPlayer.currentPosition - 10000).coerceAtLeast(0)
                                 exoPlayer.seekTo(newPos)
                                 currentPosition = newPos
+                            },
+                            size = 48.dp
+                        )
+                    } else {
+                        val scope = rememberCoroutineScope()
+                        TVButton(
+                            icon = Icons.Default.KeyboardArrowDown,
+                            onClick = {
+                                val prevChannel = PlaylistManager.playPrevious()
+                                if (prevChannel != null) {
+                                    scope.launch {
+                                        val baseHeaders = mutableMapOf<String, String>()
+                                        prevChannel.userAgent?.let { baseHeaders["User-Agent"] = it }
+                                        prevChannel.httpReferer?.let { baseHeaders["Referer"] = it }
+                                        prevChannel.origin?.let { baseHeaders["Origin"] = it }
+                                        prevChannel.cookie?.let { baseHeaders["Cookie"] = it }
+                                        val headersJson = android.net.Uri.encode(Gson().toJson(baseHeaders))
+
+                                        val finalUrl = if (!prevChannel.tokenUrl.isNullOrEmpty()) {
+                                            TokenParser.resolveTokenForUrl(context, prevChannel.url, prevChannel.tokenUrl!!, prevChannel.tokenType ?: "catchup") ?: prevChannel.url
+                                        } else {
+                                            prevChannel.url
+                                        }
+
+                                        val encodedTitle = android.net.Uri.encode(prevChannel.name)
+                                        val encodedUrl = android.net.Uri.encode(finalUrl)
+                                        val route = "player?url=$encodedUrl&title=$encodedTitle&headers=$headersJson"
+                                        navController.navigate(route) {
+                                            popUpTo("player") { inclusive = true }
+                                        }
+                                    }
+                                } else {
+                                    Toast.makeText(context, "No previous channel", Toast.LENGTH_SHORT).show()
+                                }
                             },
                             size = 48.dp
                         )
@@ -302,6 +357,39 @@ fun PlayerScreen(
                                 val newPos = (exoPlayer.currentPosition + 10000).coerceAtMost(duration)
                                 exoPlayer.seekTo(newPos)
                                 currentPosition = newPos
+                            },
+                            size = 48.dp
+                        )
+                    } else {
+                        TVButton(
+                            icon = Icons.Default.KeyboardArrowUp,
+                            onClick = {
+                                val nextChannel = PlaylistManager.playNext()
+                                if (nextChannel != null) {
+                                    scope.launch {
+                                        val baseHeaders = mutableMapOf<String, String>()
+                                        nextChannel.userAgent?.let { baseHeaders["User-Agent"] = it }
+                                        nextChannel.httpReferer?.let { baseHeaders["Referer"] = it }
+                                        nextChannel.origin?.let { baseHeaders["Origin"] = it }
+                                        nextChannel.cookie?.let { baseHeaders["Cookie"] = it }
+                                        val headersJson = android.net.Uri.encode(Gson().toJson(baseHeaders))
+
+                                        val finalUrl = if (!nextChannel.tokenUrl.isNullOrEmpty()) {
+                                            TokenParser.resolveTokenForUrl(context, nextChannel.url, nextChannel.tokenUrl!!, nextChannel.tokenType ?: "catchup") ?: nextChannel.url
+                                        } else {
+                                            nextChannel.url
+                                        }
+
+                                        val encodedTitle = android.net.Uri.encode(nextChannel.name)
+                                        val encodedUrl = android.net.Uri.encode(finalUrl)
+                                        val route = "player?url=$encodedUrl&title=$encodedTitle&headers=$headersJson"
+                                        navController.navigate(route) {
+                                            popUpTo("player") { inclusive = true }
+                                        }
+                                    }
+                                } else {
+                                    Toast.makeText(context, "No next channel", Toast.LENGTH_SHORT).show()
+                                }
                             },
                             size = 48.dp
                         )
@@ -355,46 +443,25 @@ fun PlayerScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.End
                     ) {
-                        if (!isVod) {
-                            IconButton(onClick = { 
-                                val prevChannel = PlaylistManager.playPrevious()
-                                if (prevChannel != null) {
-                                    val encodedTitle = android.net.Uri.encode(prevChannel.name)
-                                    val finalUrl = android.net.Uri.encode(prevChannel.url) // Need to handle token logic later if needed
-                                    val route = "player?url=$finalUrl&title=$encodedTitle"
-                                    navController.navigate(route) {
-                                        popUpTo("player") { inclusive = true }
-                                    }
-                                } else {
-                                    Toast.makeText(context, "No previous channel", Toast.LENGTH_SHORT).show()
-                                }
-                            }) {
-                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Channel Down", tint = Color.White)
-                            }
-                            IconButton(onClick = { 
-                                val nextChannel = PlaylistManager.playNext()
-                                if (nextChannel != null) {
-                                    val encodedTitle = android.net.Uri.encode(nextChannel.name)
-                                    val finalUrl = android.net.Uri.encode(nextChannel.url)
-                                    val route = "player?url=$finalUrl&title=$encodedTitle"
-                                    navController.navigate(route) {
-                                        popUpTo("player") { inclusive = true }
-                                    }
-                                } else {
-                                    Toast.makeText(context, "No next channel", Toast.LENGTH_SHORT).show()
-                                }
-                            }) {
-                                Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Channel Up", tint = Color.White)
-                            }
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
-
+                        Spacer(modifier = Modifier.weight(1f))
+                        
                         var isMuted by remember { mutableStateOf(exoPlayer.volume == 0f) }
                         IconButton(onClick = {
                             isMuted = !isMuted
                             exoPlayer.volume = if (isMuted) 0f else 1f
                         }) {
                             Icon(if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp, contentDescription = "Volume", tint = Color.White)
+                        }
+                        
+                        IconButton(onClick = {
+                            TrackSelectionDialogBuilder(
+                                context,
+                                "Select Quality",
+                                exoPlayer,
+                                C.TRACK_TYPE_VIDEO
+                            ).build().show()
+                        }) {
+                            Icon(Icons.Default.Settings, contentDescription = "Quality", tint = Color.White)
                         }
 
                         if (isVod) {
@@ -403,7 +470,7 @@ fun PlayerScreen(
                                     context,
                                     "Select Subtitles",
                                     exoPlayer,
-                                    androidx.media3.common.C.TRACK_TYPE_TEXT
+                                    C.TRACK_TYPE_TEXT
                                 ).build().show()
                             }) {
                                 Icon(Icons.Default.Subtitles, contentDescription = "Subtitles", tint = Color.White)
