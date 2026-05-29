@@ -71,24 +71,30 @@ fun AppNavigation() {
             com.myselfhridoy.streambdplayer.ui.screens.home.TmdbDetailsScreen(navController = navController, mediaItemJson = itemJson)
         }
         composable(
-            route = "player?url={url}&title={title}&drmLicenseUrl={drmLicenseUrl}&drmSchemeUuid={drmSchemeUuid}",
+            route = "player?url={url}&title={title}&drmLicenseUrl={drmLicenseUrl}&drmSchemeUuid={drmSchemeUuid}&isVod={isVod}&headers={headers}",
             arguments = listOf(
                 navArgument("url") { type = NavType.StringType; nullable = true },
                 navArgument("title") { type = NavType.StringType; nullable = true },
                 navArgument("drmLicenseUrl") { type = NavType.StringType; nullable = true },
-                navArgument("drmSchemeUuid") { type = NavType.StringType; nullable = true }
+                navArgument("drmSchemeUuid") { type = NavType.StringType; nullable = true },
+                navArgument("isVod") { type = NavType.BoolType; defaultValue = false },
+                navArgument("headers") { type = NavType.StringType; nullable = true }
             )
         ) { backStackEntry ->
             val url = backStackEntry.arguments?.getString("url")
             val title = backStackEntry.arguments?.getString("title") ?: "Video Player"
             val drmLicenseUrl = backStackEntry.arguments?.getString("drmLicenseUrl")
             val drmSchemeUuid = backStackEntry.arguments?.getString("drmSchemeUuid")
+            val isVod = backStackEntry.arguments?.getBoolean("isVod") ?: false
+            val headersJson = backStackEntry.arguments?.getString("headers")
             PlayerScreen(
                 navController = navController,
                 mediaUrl = url,
                 title = title,
                 drmLicenseUrl = drmLicenseUrl,
-                drmSchemeUuid = drmSchemeUuid
+                drmSchemeUuid = drmSchemeUuid,
+                isVod = isVod,
+                headersJson = headersJson
             )
         }
         composable("history") {

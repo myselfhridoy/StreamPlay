@@ -19,16 +19,26 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.myselfhridoy.streambdplayer.data.models.MediaItem
 import com.myselfhridoy.streambdplayer.data.remote.TmdbApi
 import com.myselfhridoy.streambdplayer.ui.theme.BackgroundDark
+import com.myselfhridoy.streambdplayer.utils.AddonManager
+import com.myselfhridoy.streambdplayer.utils.StreamSource
 import com.google.gson.Gson
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TmdbDetailsScreen(navController: NavController, mediaItemJson: String) {
+    val context = LocalContext.current
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+    var showSourcesSheet by androidx.compose.runtime.mutableStateOf(false)
+    var sourcesLoading by androidx.compose.runtime.mutableStateOf(false)
+    var streamSources by androidx.compose.runtime.mutableStateOf<List<StreamSource>>(emptyList())
+    val sheetState = rememberModalBottomSheetState()
     val item = try {
         Gson().fromJson(mediaItemJson, MediaItem::class.java)
     } catch (e: Exception) {
@@ -117,13 +127,34 @@ fun TmdbDetailsScreen(navController: NavController, mediaItemJson: String) {
                         val dummyTitle = java.net.URLEncoder.encode(item.title ?: item.name ?: "Trailer", java.nio.charset.StandardCharsets.UTF_8.toString())
                         navController.navigate("player?url=$dummyUrl&title=$dummyTitle")
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray, contentColor = Color.White),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth().height(50.dp)
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = "Trailer")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Play Trailer", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        showSourcesSheet = true
+                        sourcesLoading = true
+                        coroutineScope.launch {
+                            val type = if (item.name != null) "tv" else "movie"
+                            streamSources = AddonManager.resolveFromAddons(context, type, item.id)
+                            sourcesLoading = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914), contentColor = Color.White),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.fillMaxWidth().height(50.dp)
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = "Play")
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Play Trailer", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("Play Now", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -142,6 +173,58 @@ fun TmdbDetailsScreen(navController: NavController, mediaItemJson: String) {
                     lineHeight = 24.sp
                 )
                 Spacer(modifier = Modifier.height(100.dp))
+            }
+        }
+        
+        if (showSourcesSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showSourcesSheet = false },
+                sheetState = sheetState,
+                containerColor = Color(0xFF1A1A2E)
+            ) {
+                Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+                    Text(
+                        text = "Select Server",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    if (sourcesLoading) {
+                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color(0xFFE50914))
+                        }
+                    } else if (streamSources.isEmpty()) {
+                        Text("No sources found. Make sure you have addons enabled.", color = Color.Gray, modifier = Modifier.padding(16.dp))
+                    } else {
+                        streamSources.forEachIndexed { index, source ->
+                            Button(
+                                onClick = {
+                                    showSourcesSheet = false
+                                    val encodedUrl = java.net.URLEncoder.encode(source.url, "UTF-8")
+                                    val encodedTitle = java.net.URLEncoder.encode(item.title ?: item.name ?: "VOD", "UTF-8")
+                                    val headersJson = java.net.URLEncoder.encode(Gson().toJson(source.headers ?: emptyMap<String, String>()), "UTF-8")
+                                    navController.navigate("player?url=$encodedUrl&title=$encodedTitle&isVod=true&headers=$headersJson")
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A3A), contentColor = Color.White),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).height(60.dp)
+                            ) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Column {
+                                        Text(source.provider, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                        Text(source.type?.uppercase() ?: "STREAM", fontSize = 12.sp, color = Color.Gray)
+                                    }
+                                    Box(modifier = Modifier.background(Color(0xFFE50914), RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 4.dp)) {
+                                        Text(source.quality, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
             }
         }
     }

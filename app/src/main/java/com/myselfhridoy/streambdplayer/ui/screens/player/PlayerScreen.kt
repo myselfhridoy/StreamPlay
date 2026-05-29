@@ -46,6 +46,10 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import java.util.UUID
 import android.widget.Toast
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -54,15 +58,32 @@ fun PlayerScreen(
     mediaUrl: String? = null,
     title: String = "Video Player",
     drmLicenseUrl: String? = null,
-    drmSchemeUuid: String? = null
+    drmSchemeUuid: String? = null,
+    isVod: Boolean = false,
+    headersJson: String? = null
 ) {
     val context = LocalContext.current
     
     // ExoPlayer Setup
     val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
-            playWhenReady = true
+        val headers = try {
+            if (!headersJson.isNullOrEmpty()) {
+                val type = object : TypeToken<Map<String, String>>() {}.type
+                Gson().fromJson<Map<String, String>>(headersJson, type)
+            } else emptyMap()
+        } catch (e: Exception) {
+            emptyMap()
         }
+
+        val httpDataSourceFactory = DefaultHttpDataSource.Factory().apply {
+            headers.forEach { (key, value) -> setDefaultRequestProperty(key, value) }
+        }
+
+        ExoPlayer.Builder(context)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(context).setDataSourceFactory(httpDataSourceFactory))
+            .build().apply {
+                playWhenReady = true
+            }
     }
 
     var isPlaying by remember { mutableStateOf(exoPlayer.isPlaying) }
