@@ -114,7 +114,8 @@ fun TmdbDetailsScreen(navController: NavController, mediaItemJson: String) {
                 Button(
                     onClick = {
                         val dummyUrl = java.net.URLEncoder.encode("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4", java.nio.charset.StandardCharsets.UTF_8.toString())
-                        navController.navigate("player?url=$dummyUrl")
+                        val dummyTitle = java.net.URLEncoder.encode(item.title ?: item.name ?: "Trailer", java.nio.charset.StandardCharsets.UTF_8.toString())
+                        navController.navigate("player?url=$dummyUrl&title=$dummyTitle")
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                     shape = RoundedCornerShape(8.dp),

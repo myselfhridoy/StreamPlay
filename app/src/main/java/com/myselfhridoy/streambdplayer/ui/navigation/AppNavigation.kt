@@ -71,11 +71,15 @@ fun AppNavigation() {
             com.myselfhridoy.streambdplayer.ui.screens.home.TmdbDetailsScreen(navController = navController, mediaItemJson = itemJson)
         }
         composable(
-            route = "player?url={url}",
-            arguments = listOf(navArgument("url") { type = NavType.StringType; nullable = true })
+            route = "player?url={url}&title={title}",
+            arguments = listOf(
+                navArgument("url") { type = NavType.StringType; nullable = true },
+                navArgument("title") { type = NavType.StringType; nullable = true }
+            )
         ) { backStackEntry ->
             val url = backStackEntry.arguments?.getString("url")
-            PlayerScreen(navController = navController, mediaUrl = url)
+            val title = backStackEntry.arguments?.getString("title") ?: "Video Player"
+            PlayerScreen(navController = navController, mediaUrl = url, title = title)
         }
         composable("history") {
             HistoryScreen(navController = navController)

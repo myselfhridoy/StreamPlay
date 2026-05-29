@@ -13,24 +13,12 @@ import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.PictureInPictureAlt
-import androidx.compose.material3.Icon
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,11 +26,16 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -53,7 +46,7 @@ import kotlinx.coroutines.delay
 
 @OptIn(UnstableApi::class)
 @Composable
-fun PlayerScreen(navController: NavController, mediaUrl: String? = null) {
+fun PlayerScreen(navController: NavController, mediaUrl: String? = null, title: String = "Video Player") {
     val context = LocalContext.current
     
     // ExoPlayer Setup
@@ -65,6 +58,10 @@ fun PlayerScreen(navController: NavController, mediaUrl: String? = null) {
 
     var isPlaying by remember { mutableStateOf(exoPlayer.isPlaying) }
     var showControls by remember { mutableStateOf(true) }
+    var currentPosition by remember { mutableLongStateOf(0L) }
+    var duration by remember { mutableLongStateOf(0L) }
+    var playbackSpeed by remember { mutableFloatStateOf(1.0f) }
+    var showSpeedMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(mediaUrl) {
         if (!mediaUrl.isNullOrEmpty()) {
@@ -78,11 +75,24 @@ fun PlayerScreen(navController: NavController, mediaUrl: String? = null) {
             override fun onIsPlayingChanged(playing: Boolean) {
                 isPlaying = playing
             }
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_READY) {
+                    duration = exoPlayer.duration.coerceAtLeast(0L)
+                }
+            }
         }
         exoPlayer.addListener(listener)
         onDispose {
             exoPlayer.removeListener(listener)
             exoPlayer.release()
+        }
+    }
+
+    LaunchedEffect(isPlaying, showControls) {
+        while (isPlaying && showControls) {
+            currentPosition = exoPlayer.currentPosition
+            duration = exoPlayer.duration.coerceAtLeast(0L)
+            delay(1000)
         }
     }
 
@@ -115,30 +125,135 @@ fun PlayerScreen(navController: NavController, mediaUrl: String? = null) {
             modifier = Modifier.fillMaxSize()
         )
 
-        // Custom Overlay Controls (D-Pad friendly)
+        // Custom Overlay Controls
         if (showControls) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0x66000000))
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
+                    .background(Color(0x99000000))
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                // Top Bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .align(Alignment.TopCenter),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = title,
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    Box {
+                        IconButton(onClick = { showSpeedMenu = true }) {
+                            Icon(Icons.Default.Speed, contentDescription = "Speed", tint = Color.White)
+                        }
+                        DropdownMenu(
+                            expanded = showSpeedMenu,
+                            onDismissRequest = { showSpeedMenu = false }
+                        ) {
+                            val speeds = listOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
+                            speeds.forEach { speed ->
+                                DropdownMenuItem(
+                                    text = { Text("${speed}x") },
+                                    onClick = {
+                                        playbackSpeed = speed
+                                        exoPlayer.playbackParameters = PlaybackParameters(speed)
+                                        showSpeedMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Center Controls
+                Row(
+                    modifier = Modifier.align(Alignment.Center),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    TVButton(
+                        icon = Icons.Default.FastRewind,
+                        onClick = {
+                            val newPos = (exoPlayer.currentPosition - 10000).coerceAtLeast(0)
+                            exoPlayer.seekTo(newPos)
+                            currentPosition = newPos
+                        },
+                        size = 56.dp
+                    )
+                    
                     TVButton(
                         icon = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                         onClick = {
                             if (isPlaying) exoPlayer.pause() else exoPlayer.play()
-                        }
+                        },
+                        size = 72.dp,
+                        isPrimary = true
                     )
                     
-                    // PiP Button
                     TVButton(
-                        icon = Icons.Default.PictureInPictureAlt,
+                        icon = Icons.Default.FastForward,
                         onClick = {
-                            enterPiP(context)
-                        }
+                            val newPos = (exoPlayer.currentPosition + 10000).coerceAtMost(duration)
+                            exoPlayer.seekTo(newPos)
+                            currentPosition = newPos
+                        },
+                        size = 56.dp
                     )
+                }
+
+                // Bottom Bar
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 32.dp, vertical = 24.dp)
+                        .align(Alignment.BottomCenter)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = formatTime(currentPosition),
+                            color = Color.White,
+                            fontSize = 14.sp
+                        )
+                        Slider(
+                            value = if (duration > 0) (currentPosition.toFloat() / duration.toFloat()) else 0f,
+                            onValueChange = { value ->
+                                val newPos = (value * duration).toLong()
+                                exoPlayer.seekTo(newPos)
+                                currentPosition = newPos
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 16.dp),
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color(0xFFE50914),
+                                activeTrackColor = Color(0xFFE50914)
+                            )
+                        )
+                        Text(
+                            text = formatTime(duration),
+                            color = Color.White,
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        IconButton(onClick = { enterPiP(context) }) {
+                            Icon(Icons.Default.PictureInPictureAlt, contentDescription = "PiP", tint = Color.White)
+                        }
+                    }
                 }
             }
         }
@@ -147,23 +262,23 @@ fun PlayerScreen(navController: NavController, mediaUrl: String? = null) {
 
 @Composable
 fun TVButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit
+    icon: ImageVector,
+    onClick: () -> Unit,
+    size: androidx.compose.ui.unit.Dp = 64.dp,
+    isPrimary: Boolean = false
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
-        // Automatically request focus if it's the play button (first one)
-        if (icon == Icons.Default.PlayArrow || icon == Icons.Default.Pause) {
+        if (isPrimary) {
             try { focusRequester.requestFocus() } catch (e: Exception) {}
         }
     }
 
     Box(
         modifier = Modifier
-            .padding(16.dp)
-            .size(64.dp)
+            .size(size)
             .clip(CircleShape)
             .background(if (isFocused) Color.White else Color(0x33FFFFFF))
             .focusRequester(focusRequester)
@@ -184,8 +299,20 @@ fun TVButton(
             imageVector = icon,
             contentDescription = null,
             tint = if (isFocused) Color.Black else Color.White,
-            modifier = Modifier.size(32.dp)
+            modifier = Modifier.size(size / 2)
         )
+    }
+}
+
+private fun formatTime(ms: Long): String {
+    val totalSeconds = ms / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return if (hours > 0) {
+        String.format("%d:%02d:%02d", hours, minutes, seconds)
+    } else {
+        String.format("%02d:%02d", minutes, seconds)
     }
 }
 
