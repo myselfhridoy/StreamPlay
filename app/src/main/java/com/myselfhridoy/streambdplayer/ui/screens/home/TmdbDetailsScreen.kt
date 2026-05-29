@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -167,7 +168,7 @@ fun TmdbDetailsScreen(navController: NavController, mediaItemJson: String) {
                     Text("Seasons", color = Color.White, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(8.dp))
                     androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        androidx.compose.foundation.lazy.items(tvDetails!!.seasons.filter { it.seasonNumber > 0 }) { season ->
+                        items(tvDetails!!.seasons.filter { it.seasonNumber > 0 }) { season ->
                             val isSelected = selectedSeason?.seasonNumber == season.seasonNumber
                             Button(
                                 onClick = { selectedSeason = season },
@@ -188,7 +189,7 @@ fun TmdbDetailsScreen(navController: NavController, mediaItemJson: String) {
                         Text("Episodes", color = Color.White, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
                         androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            androidx.compose.foundation.lazy.items(seasonEpisodes) { episode ->
+                            items(seasonEpisodes) { episode ->
                                 val isSelected = selectedEpisode?.episodeNumber == episode.episodeNumber
                                 Button(
                                     onClick = { selectedEpisode = episode },
