@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -43,10 +44,18 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
+import java.util.UUID
+import android.widget.Toast
 
 @OptIn(UnstableApi::class)
 @Composable
-fun PlayerScreen(navController: NavController, mediaUrl: String? = null, title: String = "Video Player") {
+fun PlayerScreen(
+    navController: NavController,
+    mediaUrl: String? = null,
+    title: String = "Video Player",
+    drmLicenseUrl: String? = null,
+    drmSchemeUuid: String? = null
+) {
     val context = LocalContext.current
     
     // ExoPlayer Setup
@@ -63,9 +72,24 @@ fun PlayerScreen(navController: NavController, mediaUrl: String? = null, title: 
     var playbackSpeed by remember { mutableFloatStateOf(1.0f) }
     var showSpeedMenu by remember { mutableStateOf(false) }
 
-    LaunchedEffect(mediaUrl) {
+    LaunchedEffect(mediaUrl, drmLicenseUrl, drmSchemeUuid) {
         if (!mediaUrl.isNullOrEmpty()) {
-            exoPlayer.setMediaItem(MediaItem.fromUri(mediaUrl))
+            val mediaItemBuilder = MediaItem.Builder().setUri(mediaUrl)
+            
+            if (!drmLicenseUrl.isNullOrEmpty() && !drmSchemeUuid.isNullOrEmpty()) {
+                try {
+                    val drmUuid = UUID.fromString(drmSchemeUuid)
+                    mediaItemBuilder.setDrmConfiguration(
+                        MediaItem.DrmConfiguration.Builder(drmUuid)
+                            .setLicenseUri(drmLicenseUrl)
+                            .build()
+                    )
+                } catch (e: Exception) {
+                    // Invalid UUID format
+                    Toast.makeText(context, "Invalid DRM Configuration", Toast.LENGTH_SHORT).show()
+                }
+            }
+            exoPlayer.setMediaItem(mediaItemBuilder.build())
             exoPlayer.prepare()
         }
     }
@@ -78,6 +102,14 @@ fun PlayerScreen(navController: NavController, mediaUrl: String? = null, title: 
             override fun onPlaybackStateChanged(playbackState: Int) {
                 if (playbackState == Player.STATE_READY) {
                     duration = exoPlayer.duration.coerceAtLeast(0L)
+                }
+            }
+            override fun onPlayerError(error: PlaybackException) {
+                if (error.errorCode == PlaybackException.ERROR_CODE_DRM_LICENSE_ACQUISITION_FAILED ||
+                    error.errorCode == PlaybackException.ERROR_CODE_DRM_PROVISIONING_FAILED) {
+                    Toast.makeText(context, "DRM Authentication Failed", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(context, "Playback Error: ${error.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
