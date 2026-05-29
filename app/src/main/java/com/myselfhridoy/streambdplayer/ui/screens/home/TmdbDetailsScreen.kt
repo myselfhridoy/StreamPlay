@@ -126,8 +126,8 @@ fun TmdbDetailsScreen(navController: NavController, mediaItemJson: String) {
                 
                 Button(
                     onClick = {
-                        val dummyUrl = java.net.URLEncoder.encode("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4", java.nio.charset.StandardCharsets.UTF_8.toString())
-                        val dummyTitle = java.net.URLEncoder.encode(item.title ?: item.name ?: "Trailer", java.nio.charset.StandardCharsets.UTF_8.toString())
+                        val dummyUrl = android.net.Uri.encode("https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4")
+                        val dummyTitle = android.net.Uri.encode(item.title ?: item.name ?: "Trailer")
                         navController.navigate("player?url=$dummyUrl&title=$dummyTitle")
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray, contentColor = Color.White),
@@ -205,9 +205,9 @@ fun TmdbDetailsScreen(navController: NavController, mediaItemJson: String) {
                             Button(
                                 onClick = {
                                     showSourcesSheet = false
-                                    val encodedUrl = java.net.URLEncoder.encode(source.url, "UTF-8")
-                                    val encodedTitle = java.net.URLEncoder.encode(item.title ?: item.name ?: "VOD", "UTF-8")
-                                    val headersJson = java.net.URLEncoder.encode(Gson().toJson(source.headers ?: emptyMap<String, String>()), "UTF-8")
+                                    val encodedUrl = android.net.Uri.encode(source.url)
+                                    val encodedTitle = android.net.Uri.encode(item.title ?: item.name ?: "VOD")
+                                    val headersJson = android.net.Uri.encode(Gson().toJson(source.headers ?: emptyMap<String, String>()))
                                     navController.navigate("player?url=$encodedUrl&title=$encodedTitle&isVod=true&headers=$headersJson")
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A3A), contentColor = Color.White),

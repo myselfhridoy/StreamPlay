@@ -170,6 +170,9 @@ object AddonManager {
             webView.settings.javaScriptEnabled = true
             webView.settings.domStorageEnabled = true
 
+            webView.settings.allowUniversalAccessFromFileURLs = true
+            webView.settings.allowFileAccessFromFileURLs = true
+
             val interfaceName = "AndroidBridge"
             
             webView.addJavascriptInterface(object : Any() {
@@ -191,38 +194,43 @@ object AddonManager {
             val seasonArg = season?.toString() ?: "null"
             val episodeArg = episode?.toString() ?: "null"
 
-            // Construct the JS to evaluate
-            val script = """
-                try {
-                    $cryptoJsCode
-                    
-                    var addonModule = $addonCode;
-                    var parserFunc = addonModule;
-                    
-                    // In Expo: new Function("CryptoJS", jsCode)(CryptoJS)
-                    // But here, CryptoJS is already in global scope from the eval above.
-                    // If addonCode is a function that returns a parser:
-                    if (typeof parserFunc === 'function') {
-                        parserFunc = parserFunc(CryptoJS);
-                    }
-                    
-                    if (typeof parserFunc === 'function') {
-                        parserFunc("$type", "$tmdbId", $seasonArg, $episodeArg)
-                            .then(function(sources) {
-                                AndroidBridge.onResult(JSON.stringify(sources));
-                            })
-                            .catch(function(err) {
-                                AndroidBridge.onError(err.toString());
-                            });
-                    } else {
-                        AndroidBridge.onError("Parser is not a function");
-                    }
-                } catch(e) {
-                    AndroidBridge.onError(e.toString());
-                }
+            // Inject the cryptoJS and addonCode into an HTML file loaded from file:// to bypass CORS
+            val html = """
+                <html>
+                <head>
+                    <script>
+                        $cryptoJsCode
+                    </script>
+                    <script>
+                        try {
+                            var addonModule = $addonCode;
+                            var parserFunc = addonModule;
+                            
+                            if (typeof parserFunc === 'function') {
+                                parserFunc = parserFunc(CryptoJS);
+                            }
+                            
+                            if (typeof parserFunc === 'function') {
+                                parserFunc("$type", "$tmdbId", $seasonArg, $episodeArg)
+                                    .then(function(sources) {
+                                        AndroidBridge.onResult(JSON.stringify(sources));
+                                    })
+                                    .catch(function(err) {
+                                        AndroidBridge.onError(err.toString());
+                                    });
+                            } else {
+                                AndroidBridge.onError("Parser is not a function");
+                            }
+                        } catch(e) {
+                            AndroidBridge.onError(e.toString());
+                        }
+                    </script>
+                </head>
+                <body></body>
+                </html>
             """.trimIndent()
 
-            webView.evaluateJavascript(script, null)
+            webView.loadDataWithBaseURL("file:///android_asset/dummy.html", html, "text/html", "UTF-8", null)
 
             continuation.invokeOnCancellation {
                 webView.destroy()

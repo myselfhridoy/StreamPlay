@@ -132,7 +132,7 @@ fun ChannelBrowserScreen(
                             ChannelItem(channel = channel, onClick = {
                                 if (isResolving) return@ChannelItem
                                 
-                                val encodedTitle = java.net.URLEncoder.encode(channel.name, java.nio.charset.StandardCharsets.UTF_8.toString())
+                                val encodedTitle = android.net.Uri.encode(channel.name)
                                 
                                 val baseHeaders = mutableMapOf<String, String>()
                                 channel.userAgent?.let { baseHeaders["User-Agent"] = it }
@@ -153,15 +153,15 @@ fun ChannelBrowserScreen(
                                         )
                                         isResolving = false
                                         
-                                        val finalUrl = java.net.URLEncoder.encode(resolved?.url ?: channel.url, "UTF-8")
-                                        val headersJson = java.net.URLEncoder.encode(Gson().toJson(resolved?.headers ?: baseHeaders), "UTF-8")
+                                        val finalUrl = android.net.Uri.encode(resolved?.url ?: channel.url)
+                                        val headersJson = android.net.Uri.encode(Gson().toJson(resolved?.headers ?: baseHeaders))
                                         
                                         val drmType = resolved?.drm?.type ?: channel.drm?.type
                                         val drmLicense = resolved?.drm?.licenseServer ?: channel.drm?.licenseServer
                                         var route = "player?url=$finalUrl&title=$encodedTitle&headers=$headersJson"
                                         
                                         if (drmType == "widevine" && !drmLicense.isNullOrEmpty()) {
-                                            val drmUrlEnc = java.net.URLEncoder.encode(drmLicense, "UTF-8")
+                                            val drmUrlEnc = android.net.Uri.encode(drmLicense)
                                             route += "&drmLicenseUrl=$drmUrlEnc&drmSchemeUuid=edef8ba9-79d6-4ace-a3c8-27dcd51d21ed"
                                         } else if (drmType == "clearkey" && !resolved?.drm?.rawKeyPair.isNullOrEmpty()) {
                                             // Handling ClearKey would go here, currently ExoPlayer supports it if configured
@@ -170,12 +170,12 @@ fun ChannelBrowserScreen(
                                         navController.navigate(route)
                                     }
                                 } else {
-                                    val finalUrl = java.net.URLEncoder.encode(channel.url, "UTF-8")
-                                    val headersJson = java.net.URLEncoder.encode(Gson().toJson(baseHeaders), "UTF-8")
+                                    val finalUrl = android.net.Uri.encode(channel.url)
+                                    val headersJson = android.net.Uri.encode(Gson().toJson(baseHeaders))
                                     var route = "player?url=$finalUrl&title=$encodedTitle&headers=$headersJson"
                                     
                                     if (channel.drm?.type == "widevine" && !channel.drm.licenseServer.isNullOrEmpty()) {
-                                        val drmUrlEnc = java.net.URLEncoder.encode(channel.drm.licenseServer, "UTF-8")
+                                        val drmUrlEnc = android.net.Uri.encode(channel.drm.licenseServer)
                                         route += "&drmLicenseUrl=$drmUrlEnc&drmSchemeUuid=edef8ba9-79d6-4ace-a3c8-27dcd51d21ed"
                                     }
                                     
