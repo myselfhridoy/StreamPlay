@@ -2,6 +2,7 @@ package com.myselfhridoy.streambdplayer.utils
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -53,8 +54,15 @@ object WebViewSniffer {
 
                         // Check if it's a media stream
                         if (isMediaStream(reqUrl)) {
-                            val capturedHeaders = request.requestHeaders ?: mapOf()
-                            // Pass back the real stream URL and any headers (like Referer) captured by WebView
+                            val capturedHeaders = request.requestHeaders?.toMutableMap() ?: mutableMapOf()
+                            
+                            // Explicitly get cookies for this URL since requestHeaders often omits them
+                            val cookieString = CookieManager.getInstance().getCookie(reqUrl)
+                            if (!cookieString.isNullOrEmpty()) {
+                                capturedHeaders["Cookie"] = cookieString
+                            }
+
+                            // Pass back the real stream URL and any headers (like Referer & Cookie) captured by WebView
                             finish(ResolvedToken(url = reqUrl, headers = capturedHeaders))
                             return WebResourceResponse("text/plain", "UTF-8", null) // Block further loading
                         }
