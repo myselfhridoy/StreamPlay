@@ -22,6 +22,7 @@ import com.myselfhridoy.streambdplayer.utils.AddonManager
 import com.myselfhridoy.streambdplayer.utils.StreamSource
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,16 +32,15 @@ fun ServerSelectionScreen(
     type: String,
     title: String,
     season: String? = null,
-    episode: String? = null
+    episode: String? = null,
+    viewModel: ServerSelectionViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    var sourcesLoading by remember { mutableStateOf(true) }
-    var streamSources by remember { mutableStateOf<List<StreamSource>>(emptyList()) }
+    val sourcesLoading by viewModel.isLoading.collectAsState()
+    val streamSources by viewModel.streamSources.collectAsState()
 
     LaunchedEffect(tmdbId, type, season, episode) {
-        val tmdbIdInt = tmdbId.toIntOrNull() ?: return@LaunchedEffect
-        streamSources = AddonManager.resolveFromAddons(context, type, tmdbIdInt, season?.toIntOrNull(), episode?.toIntOrNull())
-        sourcesLoading = false
+        viewModel.fetchSources(context, tmdbId, type, season, episode)
     }
 
     Scaffold(

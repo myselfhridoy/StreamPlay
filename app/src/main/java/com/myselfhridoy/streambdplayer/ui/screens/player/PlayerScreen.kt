@@ -42,6 +42,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import androidx.media3.ui.TrackSelectionDialogBuilder
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import java.util.UUID
@@ -231,11 +232,49 @@ fun PlayerScreen(
                         modifier = Modifier.weight(1f)
                     )
                     
-                    Box {
-                        IconButton(onClick = { showSpeedMenu = true }) {
-                            Icon(Icons.Default.Speed, contentDescription = "Speed", tint = Color.White)
+                    
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Subtitles Button
+                        IconButton(onClick = {
+                            TrackSelectionDialogBuilder(
+                                context,
+                                "Select Subtitles",
+                                exoPlayer,
+                                androidx.media3.common.C.TRACK_TYPE_TEXT
+                            ).build().show()
+                        }) {
+                            Icon(Icons.Default.Subtitles, contentDescription = "Subtitles", tint = Color.White)
                         }
-                        DropdownMenu(
+
+                        // Quality/Video Track Button
+                        IconButton(onClick = {
+                            TrackSelectionDialogBuilder(
+                                context,
+                                "Select Video Quality",
+                                exoPlayer,
+                                androidx.media3.common.C.TRACK_TYPE_VIDEO
+                            ).build().show()
+                        }) {
+                            Icon(Icons.Default.Settings, contentDescription = "Quality", tint = Color.White)
+                        }
+
+                        // Audio Track Button
+                        IconButton(onClick = {
+                            TrackSelectionDialogBuilder(
+                                context,
+                                "Select Audio Track",
+                                exoPlayer,
+                                androidx.media3.common.C.TRACK_TYPE_AUDIO
+                            ).build().show()
+                        }) {
+                            Icon(Icons.Default.Audiotrack, contentDescription = "Audio Track", tint = Color.White)
+                        }
+
+                        Box {
+                            IconButton(onClick = { showSpeedMenu = true }) {
+                                Icon(Icons.Default.Speed, contentDescription = "Speed", tint = Color.White)
+                            }
+                            DropdownMenu(
                             expanded = showSpeedMenu,
                             onDismissRequest = { showSpeedMenu = false }
                         ) {
