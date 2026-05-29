@@ -77,14 +77,15 @@ fun AppNavigation() {
             com.myselfhridoy.streambdplayer.ui.screens.home.TmdbDetailsScreen(navController = navController, mediaItemJson = itemJson)
         }
         composable(
-            route = "player?url={url}&title={title}&drmLicenseUrl={drmLicenseUrl}&drmSchemeUuid={drmSchemeUuid}&isVod={isVod}&headers={headers}",
+            route = "player?url={url}&title={title}&drmLicenseUrl={drmLicenseUrl}&drmSchemeUuid={drmSchemeUuid}&isVod={isVod}&headers={headers}&streamType={streamType}",
             arguments = listOf(
                 navArgument("url") { type = NavType.StringType; nullable = true },
                 navArgument("title") { type = NavType.StringType; nullable = true },
                 navArgument("drmLicenseUrl") { type = NavType.StringType; nullable = true },
                 navArgument("drmSchemeUuid") { type = NavType.StringType; nullable = true },
                 navArgument("isVod") { type = NavType.BoolType; defaultValue = false },
-                navArgument("headers") { type = NavType.StringType; nullable = true }
+                navArgument("headers") { type = NavType.StringType; nullable = true },
+                navArgument("streamType") { type = NavType.StringType; nullable = true }
             )
         ) { backStackEntry ->
             val url = backStackEntry.arguments?.getString("url")
@@ -93,6 +94,7 @@ fun AppNavigation() {
             val drmSchemeUuid = backStackEntry.arguments?.getString("drmSchemeUuid")
             val isVod = backStackEntry.arguments?.getBoolean("isVod") ?: false
             val headersJson = backStackEntry.arguments?.getString("headers")
+            val streamType = backStackEntry.arguments?.getString("streamType")
             PlayerScreen(
                 navController = navController,
                 mediaUrl = url,
@@ -100,7 +102,8 @@ fun AppNavigation() {
                 drmLicenseUrl = drmLicenseUrl,
                 drmSchemeUuid = drmSchemeUuid,
                 isVod = isVod,
-                headersJson = headersJson
+                headersJson = headersJson,
+                streamType = streamType
             )
         }
         composable(

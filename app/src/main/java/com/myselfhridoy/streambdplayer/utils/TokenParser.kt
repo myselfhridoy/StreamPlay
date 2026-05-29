@@ -1,5 +1,6 @@
 package com.myselfhridoy.streambdplayer.utils
 
+import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -24,6 +25,7 @@ object TokenParser {
     private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     suspend fun resolveTokenForUrl(
+        context: Context,
         baseUrl: String,
         tokenUrl: String?,
         tokenId: String? = null,
@@ -34,6 +36,11 @@ object TokenParser {
         if (tokenUrl.isNullOrEmpty()) return@withContext null
 
         val lowerTokenUrl = tokenUrl.lowercase()
+
+        // 0. streamPlay WebViewSniffer
+        if (lowerTokenUrl == "streamplay") {
+            return@withContext WebViewSniffer.sniff(context, baseUrl, headers)
+        }
 
         // 1. InfinityFree
         if (lowerTokenUrl == "if") {

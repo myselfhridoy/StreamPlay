@@ -57,6 +57,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,6 +68,7 @@ fun ChannelBrowserScreen(
     isLocal: Boolean = false,
     viewModel: ChannelBrowserViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val categories by viewModel.categories.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
@@ -149,6 +151,7 @@ fun ChannelBrowserScreen(
                                     isResolving = true
                                     coroutineScope.launch {
                                         val resolved = TokenParser.resolveTokenForUrl(
+                                            context = context,
                                             baseUrl = channel.url,
                                             tokenUrl = channel.tokenUrl,
                                             tokenId = channel.tokenId?.toString(),

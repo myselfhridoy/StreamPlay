@@ -86,7 +86,8 @@ fun ServerSelectionScreen(
                                 val encodedUrl = android.net.Uri.encode(source.url)
                                 val encodedTitle = android.net.Uri.encode(title)
                                 val headersJson = android.net.Uri.encode(Gson().toJson(source.headers ?: emptyMap<String, String>()))
-                                navController.navigate("player?url=$encodedUrl&title=$encodedTitle&isVod=true&headers=$headersJson")
+                                val streamType = android.net.Uri.encode(source.type ?: "unknown")
+                                navController.navigate("player?url=$encodedUrl&title=$encodedTitle&isVod=true&headers=$headersJson&streamType=$streamType")
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2A3A), contentColor = Color.White),
                             shape = RoundedCornerShape(8.dp),

@@ -25,6 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.animation.core.*
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
@@ -34,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import com.myselfhridoy.streambdplayer.utils.PlaylistManager
 import com.myselfhridoy.streambdplayer.utils.TokenParser
+import com.myselfhridoy.streambdplayer.utils.WebViewSniffer
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.onKeyEvent
@@ -71,13 +73,13 @@ fun PlayerScreen(
     drmLicenseUrl: String? = null,
     drmSchemeUuid: String? = null,
     isVod: Boolean = false,
-    headersJson: String? = null
+    headersJson: String? = null,
+    streamType: String? = null
 ) {
     val context = LocalContext.current
     
-    // ExoPlayer Setup
-    val exoPlayer = remember {
-        val headers = try {
+    val parsedHeaders = remember(headersJson) {
+        try {
             if (!headersJson.isNullOrEmpty()) {
                 val type = object : TypeToken<Map<String, String>>() {}.type
                 Gson().fromJson<Map<String, String>>(headersJson, type)
@@ -85,13 +87,11 @@ fun PlayerScreen(
         } catch (e: Exception) {
             emptyMap()
         }
+    }
 
-        val httpDataSourceFactory = DefaultHttpDataSource.Factory().apply {
-            setDefaultRequestProperties(headers)
-        }
-
+    // ExoPlayer Setup
+    val exoPlayer = remember {
         ExoPlayer.Builder(context)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(context).setDataSourceFactory(httpDataSourceFactory))
             .build().apply {
                 playWhenReady = true
             }
@@ -108,9 +108,28 @@ fun PlayerScreen(
     var isLandscape by remember { mutableStateOf(activity?.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) }
     var resizeMode by remember { mutableIntStateOf(AspectRatioFrameLayout.RESIZE_MODE_FIT) }
 
+    var isSniffing by remember { mutableStateOf(false) }
+
     LaunchedEffect(mediaUrl, drmLicenseUrl, drmSchemeUuid) {
         if (!mediaUrl.isNullOrEmpty()) {
-            val mediaItemBuilder = MediaItem.Builder().setUri(mediaUrl)
+            var finalUri = mediaUrl
+            var finalHeaders = parsedHeaders
+            
+            if (isVod && streamType == "streamPlay") {
+                isSniffing = true
+                val resolved = WebViewSniffer.sniff(context, mediaUrl, finalHeaders)
+                if (resolved != null) {
+                    finalUri = resolved.url
+                    finalHeaders = resolved.headers?.ifEmpty { finalHeaders } ?: finalHeaders
+                }
+                isSniffing = false
+            }
+
+            val httpDataSourceFactory = DefaultHttpDataSource.Factory().apply {
+                setDefaultRequestProperties(finalHeaders)
+            }
+            val mediaSourceFactory = DefaultMediaSourceFactory(context).setDataSourceFactory(httpDataSourceFactory)
+            val mediaItemBuilder = MediaItem.Builder().setUri(finalUri)
             
             if (!drmLicenseUrl.isNullOrEmpty() && !drmSchemeUuid.isNullOrEmpty()) {
                 try {
@@ -149,7 +168,8 @@ fun PlayerScreen(
                     Toast.makeText(context, "Invalid DRM Configuration", Toast.LENGTH_SHORT).show()
                 }
             }
-            exoPlayer.setMediaItem(mediaItemBuilder.build())
+            val mediaSource = mediaSourceFactory.createMediaSource(mediaItemBuilder.build())
+            exoPlayer.setMediaSource(mediaSource)
             exoPlayer.prepare()
         }
     }
@@ -320,6 +340,7 @@ fun PlayerScreen(
                                         val headersJson = android.net.Uri.encode(Gson().toJson(baseHeaders))
 
                                         val resolved = TokenParser.resolveTokenForUrl(
+                                            context = context,
                                             baseUrl = prevChannel.url,
                                             tokenUrl = prevChannel.tokenUrl,
                                             tokenId = prevChannel.tokenId?.toString(),
@@ -378,6 +399,7 @@ fun PlayerScreen(
                                         val headersJson = android.net.Uri.encode(Gson().toJson(baseHeaders))
 
                                         val resolved = TokenParser.resolveTokenForUrl(
+                                            context = context,
                                             baseUrl = nextChannel.url,
                                             tokenUrl = nextChannel.tokenUrl,
                                             tokenId = nextChannel.tokenId?.toString(),
