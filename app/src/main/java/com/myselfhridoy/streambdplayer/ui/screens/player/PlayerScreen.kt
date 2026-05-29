@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import com.myselfhridoy.streambdplayer.utils.PlaylistManager
 import com.myselfhridoy.streambdplayer.utils.TokenParser
-import com.google.gson.Gson
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.onKeyEvent
@@ -290,6 +289,7 @@ fun PlayerScreen(
                 }
 
                 // Center Controls
+                val scope = rememberCoroutineScope()
                 Row(
                     modifier = Modifier.align(Alignment.Center),
                     verticalAlignment = Alignment.CenterVertically,
@@ -306,7 +306,6 @@ fun PlayerScreen(
                             size = 48.dp
                         )
                     } else {
-                        val scope = rememberCoroutineScope()
                         TVButton(
                             icon = Icons.Default.KeyboardArrowDown,
                             onClick = {
@@ -320,11 +319,15 @@ fun PlayerScreen(
                                         prevChannel.cookie?.let { baseHeaders["Cookie"] = it }
                                         val headersJson = android.net.Uri.encode(Gson().toJson(baseHeaders))
 
-                                        val finalUrl = if (!prevChannel.tokenUrl.isNullOrEmpty()) {
-                                            TokenParser.resolveTokenForUrl(context, prevChannel.url, prevChannel.tokenUrl!!, prevChannel.tokenType ?: "catchup") ?: prevChannel.url
-                                        } else {
-                                            prevChannel.url
-                                        }
+                                        val resolved = TokenParser.resolveTokenForUrl(
+                                            baseUrl = prevChannel.url,
+                                            tokenUrl = prevChannel.tokenUrl,
+                                            tokenId = prevChannel.tokenId?.toString(),
+                                            headers = baseHeaders,
+                                            tokenMatch = prevChannel.tokenMatch,
+                                            tokenReplace = prevChannel.tokenReplace
+                                        )
+                                        val finalUrl = resolved?.url ?: prevChannel.url
 
                                         val encodedTitle = android.net.Uri.encode(prevChannel.name)
                                         val encodedUrl = android.net.Uri.encode(finalUrl)
@@ -374,11 +377,15 @@ fun PlayerScreen(
                                         nextChannel.cookie?.let { baseHeaders["Cookie"] = it }
                                         val headersJson = android.net.Uri.encode(Gson().toJson(baseHeaders))
 
-                                        val finalUrl = if (!nextChannel.tokenUrl.isNullOrEmpty()) {
-                                            TokenParser.resolveTokenForUrl(context, nextChannel.url, nextChannel.tokenUrl!!, nextChannel.tokenType ?: "catchup") ?: nextChannel.url
-                                        } else {
-                                            nextChannel.url
-                                        }
+                                        val resolved = TokenParser.resolveTokenForUrl(
+                                            baseUrl = nextChannel.url,
+                                            tokenUrl = nextChannel.tokenUrl,
+                                            tokenId = nextChannel.tokenId?.toString(),
+                                            headers = baseHeaders,
+                                            tokenMatch = nextChannel.tokenMatch,
+                                            tokenReplace = nextChannel.tokenReplace
+                                        )
+                                        val finalUrl = resolved?.url ?: nextChannel.url
 
                                         val encodedTitle = android.net.Uri.encode(nextChannel.name)
                                         val encodedUrl = android.net.Uri.encode(finalUrl)
