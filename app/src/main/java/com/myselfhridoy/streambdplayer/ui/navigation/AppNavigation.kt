@@ -97,6 +97,24 @@ fun AppNavigation() {
                 headersJson = headersJson
             )
         }
+        composable(
+            route = "selectServer?tmdbId={tmdbId}&type={type}&title={title}",
+            arguments = listOf(
+                navArgument("tmdbId") { type = NavType.StringType },
+                navArgument("type") { type = NavType.StringType },
+                navArgument("title") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val tmdbId = backStackEntry.arguments?.getString("tmdbId") ?: ""
+            val type = backStackEntry.arguments?.getString("type") ?: ""
+            val title = backStackEntry.arguments?.getString("title") ?: "Select Server"
+            com.myselfhridoy.streambdplayer.ui.screens.home.ServerSelectionScreen(
+                navController = navController,
+                tmdbId = tmdbId,
+                type = type,
+                title = title
+            )
+        }
         composable("history") {
             HistoryScreen(navController = navController)
         }
