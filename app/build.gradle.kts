@@ -79,9 +79,6 @@ dependencies {
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
     
-    // LibVLC
-    implementation(libs.libvlc)
-
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

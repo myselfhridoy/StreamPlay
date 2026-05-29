@@ -33,6 +33,7 @@ import com.myselfhridoy.streambdplayer.ui.theme.BackgroundDark
 import com.myselfhridoy.streambdplayer.ui.theme.PrimaryColor
 import com.myselfhridoy.streambdplayer.ui.theme.SurfaceDark
 import kotlinx.coroutines.delay
+import com.google.gson.Gson
 
 @Composable
 fun TmdbHomeScreen(
@@ -141,7 +142,10 @@ fun TmdbHomeContent(
                         Spacer(modifier = Modifier.height(16.dp))
                         Row {
                             Button(
-                                onClick = { /* TODO: Play */ },
+                                onClick = {
+                                    val dummyUrl = java.net.URLEncoder.encode("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4", java.nio.charset.StandardCharsets.UTF_8.toString())
+                                    navController.navigate("player?url=$dummyUrl")
+                                },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
@@ -151,7 +155,10 @@ fun TmdbHomeContent(
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Button(
-                                onClick = { /* TODO: Details */ },
+                                onClick = {
+                                    val itemJson = java.net.URLEncoder.encode(Gson().toJson(heroItem), java.nio.charset.StandardCharsets.UTF_8.toString())
+                                    navController.navigate("tmdbDetails?item=$itemJson")
+                                },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0x66FFFFFF), contentColor = Color.White),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
@@ -181,7 +188,10 @@ fun TmdbHomeContent(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(category.items) { item ->
-                            MediaCard(item = item, onClick = { /* TODO: Navigate to details */ })
+                            MediaCard(item = item, onClick = {
+                                val itemJson = java.net.URLEncoder.encode(Gson().toJson(item), java.nio.charset.StandardCharsets.UTF_8.toString())
+                                navController.navigate("tmdbDetails?item=$itemJson")
+                            })
                         }
                     }
                 }

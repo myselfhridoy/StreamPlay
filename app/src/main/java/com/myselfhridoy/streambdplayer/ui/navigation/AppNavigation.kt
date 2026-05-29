@@ -46,22 +46,36 @@ fun AppNavigation() {
             HomeScreen(navController = navController, isTv = isTv)
         }
         composable(
-            route = "channelBrowser?url={url}&name={name}",
+            route = "channelBrowser?url={url}&name={name}&isLocal={isLocal}",
             arguments = listOf(
                 navArgument("url") { type = NavType.StringType; defaultValue = "" },
-                navArgument("name") { type = NavType.StringType; defaultValue = "Playlist" }
+                navArgument("name") { type = NavType.StringType; defaultValue = "Playlist" },
+                navArgument("isLocal") { type = NavType.BoolType; defaultValue = false }
             )
         ) { backStackEntry ->
             val url = backStackEntry.arguments?.getString("url") ?: ""
             val name = backStackEntry.arguments?.getString("name") ?: "Playlist"
+            val isLocal = backStackEntry.arguments?.getBoolean("isLocal") ?: false
             ChannelBrowserScreen(
                 navController = navController,
                 playlistUrl = url,
-                playlistName = name
+                playlistName = name,
+                isLocal = isLocal
             )
         }
-        composable("player?url={url}") { backStackEntry ->
-            PlayerScreen(navController = navController)
+        composable(
+            route = "tmdbDetails?item={item}",
+            arguments = listOf(navArgument("item") { type = NavType.StringType; nullable = true })
+        ) { backStackEntry ->
+            val itemJson = backStackEntry.arguments?.getString("item") ?: ""
+            com.myselfhridoy.streambdplayer.ui.screens.home.TmdbDetailsScreen(navController = navController, mediaItemJson = itemJson)
+        }
+        composable(
+            route = "player?url={url}",
+            arguments = listOf(navArgument("url") { type = NavType.StringType; nullable = true })
+        ) { backStackEntry ->
+            val url = backStackEntry.arguments?.getString("url")
+            PlayerScreen(navController = navController, mediaUrl = url)
         }
         composable("history") {
             HistoryScreen(navController = navController)

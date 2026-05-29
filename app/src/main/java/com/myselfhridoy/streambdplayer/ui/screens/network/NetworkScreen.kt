@@ -82,7 +82,7 @@ fun NetworkScreen(navController: NavController) {
                             onClick = {
                                 val encodedUrl = java.net.URLEncoder.encode(playlist.url, java.nio.charset.StandardCharsets.UTF_8.toString())
                                 val encodedName = java.net.URLEncoder.encode(playlist.name, java.nio.charset.StandardCharsets.UTF_8.toString())
-                                navController.navigate("channelBrowser?url=$encodedUrl&name=$encodedName")
+                                navController.navigate("channelBrowser?url=$encodedUrl&name=$encodedName&isLocal=${playlist.isLocal}")
                             },
                             onDelete = {
                                 scope.launch { dao.deletePlaylist(playlist.id) }

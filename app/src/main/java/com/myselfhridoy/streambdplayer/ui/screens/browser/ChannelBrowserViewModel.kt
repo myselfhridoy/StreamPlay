@@ -1,6 +1,8 @@
 package com.myselfhridoy.streambdplayer.ui.screens.browser
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.myselfhridoy.streambdplayer.data.models.Channel
 import com.myselfhridoy.streambdplayer.utils.M3UParser
@@ -11,7 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
 
-class ChannelBrowserViewModel : ViewModel() {
+class ChannelBrowserViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow<BrowserUiState>(BrowserUiState.Loading)
     val uiState: StateFlow<BrowserUiState> = _uiState
 
@@ -29,8 +31,8 @@ class ChannelBrowserViewModel : ViewModel() {
             try {
                 val content = withContext(Dispatchers.IO) {
                     if (isLocal) {
-                        // TODO: Implement local file reading
-                        ""
+                        val uri = Uri.parse(url)
+                        getApplication<Application>().contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
                     } else {
                         URL(url).readText()
                     }
