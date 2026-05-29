@@ -26,3 +26,28 @@ data class Category(
     val type: String,
     var items: List<MediaItem> = emptyList()
 )
+
+data class TvDetailsResponse(
+    val id: Int,
+    val name: String,
+    val seasons: List<Season>
+)
+
+data class Season(
+    @SerializedName("season_number") val seasonNumber: Int,
+    @SerializedName("episode_count") val episodeCount: Int,
+    val name: String,
+    @SerializedName("poster_path") val posterPath: String?
+)
+
+data class TvSeasonResponse(
+    @SerializedName("season_number") val seasonNumber: Int,
+    val episodes: List<Episode>
+)
+
+data class Episode(
+    @SerializedName("episode_number") val episodeNumber: Int,
+    val name: String,
+    val overview: String,
+    @SerializedName("still_path") val stillPath: String?
+)

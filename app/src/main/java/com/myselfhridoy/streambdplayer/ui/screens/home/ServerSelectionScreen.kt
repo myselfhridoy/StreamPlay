@@ -29,15 +29,17 @@ fun ServerSelectionScreen(
     navController: NavController,
     tmdbId: String,
     type: String,
-    title: String
+    title: String,
+    season: String? = null,
+    episode: String? = null
 ) {
     val context = LocalContext.current
     var sourcesLoading by remember { mutableStateOf(true) }
     var streamSources by remember { mutableStateOf<List<StreamSource>>(emptyList()) }
 
-    LaunchedEffect(tmdbId, type) {
+    LaunchedEffect(tmdbId, type, season, episode) {
         val tmdbIdInt = tmdbId.toIntOrNull() ?: return@LaunchedEffect
-        streamSources = AddonManager.resolveFromAddons(context, type, tmdbIdInt)
+        streamSources = AddonManager.resolveFromAddons(context, type, tmdbIdInt, season?.toIntOrNull(), episode?.toIntOrNull())
         sourcesLoading = false
     }
 

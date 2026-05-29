@@ -98,22 +98,31 @@ fun AppNavigation() {
             )
         }
         composable(
-            route = "selectServer?tmdbId={tmdbId}&type={type}&title={title}",
+            route = "selectServer?tmdbId={tmdbId}&type={type}&title={title}&season={season}&episode={episode}",
             arguments = listOf(
                 navArgument("tmdbId") { type = NavType.StringType },
                 navArgument("type") { type = NavType.StringType },
-                navArgument("title") { type = NavType.StringType }
+                navArgument("title") { type = NavType.StringType },
+                navArgument("season") { type = NavType.StringType; nullable = true },
+                navArgument("episode") { type = NavType.StringType; nullable = true }
             )
         ) { backStackEntry ->
             val tmdbId = backStackEntry.arguments?.getString("tmdbId") ?: ""
             val type = backStackEntry.arguments?.getString("type") ?: ""
             val title = backStackEntry.arguments?.getString("title") ?: "Select Server"
+            val season = backStackEntry.arguments?.getString("season")
+            val episode = backStackEntry.arguments?.getString("episode")
             com.myselfhridoy.streambdplayer.ui.screens.home.ServerSelectionScreen(
                 navController = navController,
                 tmdbId = tmdbId,
                 type = type,
-                title = title
+                title = title,
+                season = season,
+                episode = episode
             )
+        }
+        composable("search") {
+            com.myselfhridoy.streambdplayer.ui.screens.home.SearchScreen(navController = navController)
         }
         composable("history") {
             HistoryScreen(navController = navController)

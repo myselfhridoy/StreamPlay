@@ -80,8 +80,8 @@ fun NetworkScreen(navController: NavController) {
                         SourceItem(
                             playlist = playlist,
                             onClick = {
-                                val encodedUrl = java.net.URLEncoder.encode(playlist.url, java.nio.charset.StandardCharsets.UTF_8.toString())
-                                val encodedName = java.net.URLEncoder.encode(playlist.name, java.nio.charset.StandardCharsets.UTF_8.toString())
+                                val encodedUrl = android.net.Uri.encode(playlist.url)
+                                val encodedName = android.net.Uri.encode(playlist.name)
                                 navController.navigate("channelBrowser?url=$encodedUrl&name=$encodedName&isLocal=${playlist.isLocal}")
                             },
                             onDelete = {

@@ -148,7 +148,61 @@ object TokenParser {
             return@withContext null
         }
 
-        // 4. handlerId logic (omitted complex extraction for brevity, basic fallback)
+        // 4. fetchiframe
+        if (lowerTokenUrl == "fetchiframe") {
+            try {
+                val req = Request.Builder().url(baseUrl).apply {
+                    addHeader("User-Agent", USER_AGENT)
+                    headers?.forEach { (k, v) -> addHeader(k, v) }
+                }.build()
+                val res = client.newCall(req).execute()
+                if (res.isSuccessful) {
+                    val html = res.body?.string() ?: ""
+                    val iframeRegex = Regex("<iframe[^>]+src=[\"']([^\"']+)[\"']")
+                    val match = iframeRegex.find(html)
+                    if (match != null) {
+                        var src = match.groupValues[1]
+                        if (tokenMatch != null && tokenReplace != null) {
+                            src = src.replace(tokenMatch, tokenReplace)
+                        }
+                        return@withContext ResolvedToken(url = src, headers = getStreamHeaders(baseUrl, headers))
+                    } else {
+                        // Fallback: search for m3u8 in html
+                        val m3u8Regex = Regex("[\"']([^\"']+\\.m3u8[^\"]*)[\"']")
+                        val m3u8Match = m3u8Regex.find(html)
+                        if (m3u8Match != null) {
+                            var src = m3u8Match.groupValues[1]
+                            if (tokenMatch != null && tokenReplace != null) {
+                                src = src.replace(tokenMatch, tokenReplace)
+                            }
+                            return@withContext ResolvedToken(url = src, headers = getStreamHeaders(baseUrl, headers))
+                        }
+                    }
+                }
+            } catch (e: Exception) { e.printStackTrace() }
+            return@withContext null
+        }
+
+        // 5. /3 fallback
+        if (lowerTokenUrl == "/3") {
+            try {
+                val req = Request.Builder().url(baseUrl).apply {
+                    addHeader("User-Agent", USER_AGENT)
+                    headers?.forEach { (k, v) -> addHeader(k, v) }
+                }.build()
+                val res = client.newCall(req).execute()
+                if (res.isSuccessful) {
+                    val html = res.body?.string() ?: ""
+                    val streams = extractAllUrls(html).filter { isStreamUrl(it) }
+                    if (streams.isNotEmpty()) {
+                        return@withContext ResolvedToken(url = streams.first(), headers = getStreamHeaders(baseUrl, headers))
+                    }
+                }
+            } catch (e: Exception) { e.printStackTrace() }
+            return@withContext null
+        }
+
+        // 6. handlerId logic (omitted complex extraction for brevity, basic fallback)
         val idMatch = Regex("^[\\\\/]?(\\d+)$").find(tokenUrl)
         if (idMatch != null) {
             // Simplified handler logic

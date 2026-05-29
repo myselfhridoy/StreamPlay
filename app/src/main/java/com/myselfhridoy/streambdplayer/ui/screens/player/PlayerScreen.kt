@@ -100,13 +100,37 @@ fun PlayerScreen(
             if (!drmLicenseUrl.isNullOrEmpty() && !drmSchemeUuid.isNullOrEmpty()) {
                 try {
                     val drmUuid = UUID.fromString(drmSchemeUuid)
-                    mediaItemBuilder.setDrmConfiguration(
-                        MediaItem.DrmConfiguration.Builder(drmUuid)
-                            .setLicenseUri(drmLicenseUrl)
-                            .build()
-                    )
+                    
+                    if (drmUuid == androidx.media3.common.C.CLEARKEY_UUID && drmLicenseUrl.contains(":")) {
+                        // Raw key pair kid_hex:key_hex
+                        val parts = drmLicenseUrl.split(":")
+                        if (parts.size == 2) {
+                            val kidHex = parts[0]
+                            val keyHex = parts[1]
+                            
+                            val kidBytes = kidHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+                            val keyBytes = keyHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+                            
+                            val kidBase64 = android.util.Base64.encodeToString(kidBytes, android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or android.util.Base64.NO_WRAP)
+                            val keyBase64 = android.util.Base64.encodeToString(keyBytes, android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or android.util.Base64.NO_WRAP)
+                            
+                            val clearKeyJson = """{"keys":[{"kty":"oct","k":"$keyBase64","kid":"$kidBase64"}],"type":"temporary"}"""
+                            val dataUri = "data:application/json;base64," + android.util.Base64.encodeToString(clearKeyJson.toByteArray(), android.util.Base64.NO_WRAP)
+                            
+                            mediaItemBuilder.setDrmConfiguration(
+                                MediaItem.DrmConfiguration.Builder(drmUuid)
+                                    .setLicenseUri(dataUri)
+                                    .build()
+                            )
+                        }
+                    } else {
+                        mediaItemBuilder.setDrmConfiguration(
+                            MediaItem.DrmConfiguration.Builder(drmUuid)
+                                .setLicenseUri(drmLicenseUrl)
+                                .build()
+                        )
+                    }
                 } catch (e: Exception) {
-                    // Invalid UUID format
                     Toast.makeText(context, "Invalid DRM Configuration", Toast.LENGTH_SHORT).show()
                 }
             }

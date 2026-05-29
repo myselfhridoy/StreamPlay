@@ -143,29 +143,14 @@ fun TmdbHomeContent(
                         Row {
                             Button(
                                 onClick = {
-                                    val dummyUrl = java.net.URLEncoder.encode("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4", java.nio.charset.StandardCharsets.UTF_8.toString())
-                                    val dummyTitle = java.net.URLEncoder.encode(heroItem.title ?: heroItem.name ?: "Trailer", java.nio.charset.StandardCharsets.UTF_8.toString())
-                                    navController.navigate("player?url=$dummyUrl&title=$dummyTitle")
+                                    navController.navigate("search")
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
-                                Icon(Icons.Default.PlayArrow, contentDescription = "Play")
+                                Icon(androidx.compose.material.icons.filled.Search, contentDescription = "Search")
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Play", fontWeight = FontWeight.Bold)
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Button(
-                                onClick = {
-                                    val itemJson = java.net.URLEncoder.encode(Gson().toJson(heroItem), java.nio.charset.StandardCharsets.UTF_8.toString())
-                                    navController.navigate("tmdbDetails?item=$itemJson")
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0x66FFFFFF), contentColor = Color.White),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Icon(Icons.Default.Info, contentDescription = "Details")
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Details", fontWeight = FontWeight.Bold)
+                                Text("Search", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -190,7 +175,7 @@ fun TmdbHomeContent(
                     ) {
                         items(category.items) { item ->
                             MediaCard(item = item, onClick = {
-                                val itemJson = java.net.URLEncoder.encode(Gson().toJson(item), java.nio.charset.StandardCharsets.UTF_8.toString())
+                                val itemJson = android.net.Uri.encode(Gson().toJson(item))
                                 navController.navigate("tmdbDetails?item=$itemJson")
                             })
                         }

@@ -43,6 +43,32 @@ fun TmdbDetailsScreen(navController: NavController, mediaItemJson: String) {
         null
     }
 
+    var tvDetails by androidx.compose.runtime.remember { mutableStateOf<com.myselfhridoy.streambdplayer.data.models.TvDetailsResponse?>(null) }
+    var selectedSeason by androidx.compose.runtime.remember { mutableStateOf<com.myselfhridoy.streambdplayer.data.models.Season?>(null) }
+    var seasonEpisodes by androidx.compose.runtime.remember { mutableStateOf<List<com.myselfhridoy.streambdplayer.data.models.Episode>>(emptyList()) }
+    var selectedEpisode by androidx.compose.runtime.remember { mutableStateOf<com.myselfhridoy.streambdplayer.data.models.Episode?>(null) }
+
+    androidx.compose.runtime.LaunchedEffect(item?.id) {
+        if (item != null && item.name != null) {
+            try {
+                tvDetails = com.myselfhridoy.streambdplayer.data.remote.NetworkClient.tmdbApi.getTvDetails(item.id)
+                if (tvDetails?.seasons?.isNotEmpty() == true) {
+                    selectedSeason = tvDetails?.seasons?.firstOrNull { it.seasonNumber > 0 } ?: tvDetails?.seasons?.first()
+                }
+            } catch (e: Exception) { e.printStackTrace() }
+        }
+    }
+
+    androidx.compose.runtime.LaunchedEffect(selectedSeason) {
+        if (item != null && selectedSeason != null) {
+            try {
+                val response = com.myselfhridoy.streambdplayer.data.remote.NetworkClient.tmdbApi.getTvSeasonDetails(item.id, selectedSeason!!.seasonNumber)
+                seasonEpisodes = response.episodes
+                if (seasonEpisodes.isNotEmpty()) selectedEpisode = seasonEpisodes.first()
+            } catch (e: Exception) { e.printStackTrace() }
+        }
+    }
+
     if (item == null) {
         Box(modifier = Modifier.fillMaxSize().background(BackgroundDark), contentAlignment = Alignment.Center) {
             Text("Error loading details", color = Color.White)
@@ -136,11 +162,67 @@ fun TmdbDetailsScreen(navController: NavController, mediaItemJson: String) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                if (tvDetails != null) {
+                    // Season Selector
+                    Text("Seasons", color = Color.White, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        androidx.compose.foundation.lazy.items(tvDetails!!.seasons.filter { it.seasonNumber > 0 }) { season ->
+                            val isSelected = selectedSeason?.seasonNumber == season.seasonNumber
+                            Button(
+                                onClick = { selectedSeason = season },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isSelected) Color(0xFFE50914) else Color(0xFF2A2A3A),
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Text("S${season.seasonNumber}")
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Episode Selector
+                    if (seasonEpisodes.isNotEmpty()) {
+                        Text("Episodes", color = Color.White, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            androidx.compose.foundation.lazy.items(seasonEpisodes) { episode ->
+                                val isSelected = selectedEpisode?.episodeNumber == episode.episodeNumber
+                                Button(
+                                    onClick = { selectedEpisode = episode },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isSelected) Color(0xFFE50914) else Color(0xFF2A2A3A),
+                                        contentColor = Color.White
+                                    )
+                                ) {
+                                    Text("E${episode.episodeNumber}")
+                                }
+                            }
+                        }
+                        
+                        selectedEpisode?.let { ep ->
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(ep.name, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(ep.overview, color = Color.Gray, fontSize = 12.sp, maxLines = 2)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+
                 Button(
                     onClick = {
                         val type = if (item.name != null) "tv" else "movie"
-                        val encodedTitle = android.net.Uri.encode(item.title ?: item.name ?: "Unknown")
-                        navController.navigate("selectServer?tmdbId=${item.id}&type=$type&title=$encodedTitle")
+                        var encodedTitle = android.net.Uri.encode(item.title ?: item.name ?: "Unknown")
+                        var route = "selectServer?tmdbId=${item.id}&type=$type&title=$encodedTitle"
+                        
+                        if (type == "tv" && selectedSeason != null && selectedEpisode != null) {
+                            encodedTitle = android.net.Uri.encode("${item.name} S${selectedSeason!!.seasonNumber} E${selectedEpisode!!.episodeNumber}")
+                            route += "&season=${selectedSeason!!.seasonNumber}&episode=${selectedEpisode!!.episodeNumber}"
+                        }
+                        
+                        navController.navigate(route)
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914), contentColor = Color.White),
                     shape = RoundedCornerShape(8.dp),

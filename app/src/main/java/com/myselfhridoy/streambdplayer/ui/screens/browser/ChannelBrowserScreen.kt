@@ -158,13 +158,18 @@ fun ChannelBrowserScreen(
                                         
                                         val drmType = resolved?.drm?.type ?: channel.drm?.type
                                         val drmLicense = resolved?.drm?.licenseServer ?: channel.drm?.licenseServer
+                                        val rawKeyPair = resolved?.drm?.rawKeyPair ?: channel.drm?.rawKeyPair
                                         var route = "player?url=$finalUrl&title=$encodedTitle&headers=$headersJson"
                                         
                                         if (drmType == "widevine" && !drmLicense.isNullOrEmpty()) {
                                             val drmUrlEnc = android.net.Uri.encode(drmLicense)
                                             route += "&drmLicenseUrl=$drmUrlEnc&drmSchemeUuid=edef8ba9-79d6-4ace-a3c8-27dcd51d21ed"
-                                        } else if (drmType == "clearkey" && !resolved?.drm?.rawKeyPair.isNullOrEmpty()) {
-                                            // Handling ClearKey would go here, currently ExoPlayer supports it if configured
+                                        } else if (drmType == "clearkey") {
+                                            val license = rawKeyPair ?: drmLicense
+                                            if (!license.isNullOrEmpty()) {
+                                                val drmUrlEnc = android.net.Uri.encode(license)
+                                                route += "&drmLicenseUrl=$drmUrlEnc&drmSchemeUuid=e2719d58-a985-b3c9-781a-b030af78d30e"
+                                            }
                                         }
                                         
                                         navController.navigate(route)
@@ -177,6 +182,12 @@ fun ChannelBrowserScreen(
                                     if (channel.drm?.type == "widevine" && !channel.drm.licenseServer.isNullOrEmpty()) {
                                         val drmUrlEnc = android.net.Uri.encode(channel.drm.licenseServer)
                                         route += "&drmLicenseUrl=$drmUrlEnc&drmSchemeUuid=edef8ba9-79d6-4ace-a3c8-27dcd51d21ed"
+                                    } else if (channel.drm?.type == "clearkey") {
+                                        val license = channel.drm.rawKeyPair ?: channel.drm.licenseServer
+                                        if (!license.isNullOrEmpty()) {
+                                            val drmUrlEnc = android.net.Uri.encode(license)
+                                            route += "&drmLicenseUrl=$drmUrlEnc&drmSchemeUuid=e2719d58-a985-b3c9-781a-b030af78d30e"
+                                        }
                                     }
                                     
                                     navController.navigate(route)

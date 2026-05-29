@@ -66,7 +66,7 @@ fun FavoritesScreen(navController: NavController) {
             ) {
                 items(favorites) { fav ->
                     FavoriteItem(fav = fav, onClick = {
-                        val encodedUrl = java.net.URLEncoder.encode(fav.url, java.nio.charset.StandardCharsets.UTF_8.toString())
+                        val encodedUrl = android.net.Uri.encode(fav.url)
                         navController.navigate("player?url=$encodedUrl")
                     })
                 }

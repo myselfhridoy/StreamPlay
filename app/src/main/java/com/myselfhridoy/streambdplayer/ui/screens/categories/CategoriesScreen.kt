@@ -75,8 +75,8 @@ fun CategoriesScreen(
                     ) {
                         items(state.categories) { category ->
                             CategoryCard(category = category, onClick = {
-                                val encodedUrl = java.net.URLEncoder.encode(category.url, java.nio.charset.StandardCharsets.UTF_8.toString())
-                                val encodedName = java.net.URLEncoder.encode(category.name, java.nio.charset.StandardCharsets.UTF_8.toString())
+                                val encodedUrl = android.net.Uri.encode(category.url)
+                                val encodedName = android.net.Uri.encode(category.name)
                                 navController.navigate("channelBrowser?url=$encodedUrl&name=$encodedName")
                             })
                         }
