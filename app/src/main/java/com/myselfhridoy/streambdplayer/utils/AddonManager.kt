@@ -194,6 +194,8 @@ object AddonManager {
             val seasonArg = season?.toString() ?: "null"
             val episodeArg = episode?.toString() ?: "null"
 
+            val addonCodeBase64 = android.util.Base64.encodeToString(addonCode.toByteArray(), android.util.Base64.NO_WRAP)
+
             // Inject the cryptoJS and addonCode into an HTML file loaded from file:// to bypass CORS
             val html = """
                 <html>
@@ -203,12 +205,8 @@ object AddonManager {
                     </script>
                     <script>
                         try {
-                            var addonModule = $addonCode;
-                            var parserFunc = addonModule;
-                            
-                            if (typeof parserFunc === 'function') {
-                                parserFunc = parserFunc(CryptoJS);
-                            }
+                            var decodedCode = decodeURIComponent(escape(window.atob("$addonCodeBase64")));
+                            var parserFunc = new Function("CryptoJS", decodedCode)(CryptoJS);
                             
                             if (typeof parserFunc === 'function') {
                                 parserFunc("$type", "$tmdbId", $seasonArg, $episodeArg)
