@@ -5,7 +5,7 @@ import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Rational
+import android.content.pm.ActivityInfo
 import android.view.KeyEvent
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -93,6 +93,10 @@ fun PlayerScreen(
     var duration by remember { mutableLongStateOf(0L) }
     var playbackSpeed by remember { mutableFloatStateOf(1.0f) }
     var showSpeedMenu by remember { mutableStateOf(false) }
+    
+    val activity = context as? Activity
+    var isLandscape by remember { mutableStateOf(activity?.requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) }
+    var resizeMode by remember { mutableIntStateOf(AspectRatioFrameLayout.RESIZE_MODE_FIT) }
 
     LaunchedEffect(mediaUrl, drmLicenseUrl, drmSchemeUuid) {
         if (!mediaUrl.isNullOrEmpty()) {
@@ -193,12 +197,15 @@ fun PlayerScreen(
                 PlayerView(ctx).apply {
                     player = exoPlayer
                     useController = false // We use custom compose controls
-                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    this.resizeMode = resizeMode
                     layoutParams = FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT
                     )
                 }
+            },
+            update = { view ->
+                view.resizeMode = resizeMode
             },
             modifier = Modifier.fillMaxSize()
         )
@@ -234,42 +241,57 @@ fun PlayerScreen(
                     
                     
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Subtitles Button
+                        // Aspect Ratio Button
                         IconButton(onClick = {
-                            TrackSelectionDialogBuilder(
-                                context,
-                                "Select Subtitles",
-                                exoPlayer,
-                                androidx.media3.common.C.TRACK_TYPE_TEXT
-                            ).build().show()
+                            resizeMode = when (resizeMode) {
+                                AspectRatioFrameLayout.RESIZE_MODE_FIT -> AspectRatioFrameLayout.RESIZE_MODE_FILL
+                                AspectRatioFrameLayout.RESIZE_MODE_FILL -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                                else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+                            }
                         }) {
-                            Icon(Icons.Default.Subtitles, contentDescription = "Subtitles", tint = Color.White)
+                            Icon(Icons.Default.AspectRatio, contentDescription = "Aspect Ratio", tint = Color.White)
+                        }
+
+                        // Rotate Button
+                        IconButton(onClick = {
+                            if (isLandscape) {
+                                activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                                isLandscape = false
+                            } else {
+                                activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                                isLandscape = true
+                            }
+                        }) {
+                            Icon(Icons.Default.ScreenRotation, contentDescription = "Rotate", tint = Color.White)
+                        }
+
+                        if (isVod) {
+                            // Subtitles Button
+                            IconButton(onClick = {
+                                TrackSelectionDialogBuilder(
+                                    context,
+                                    "Select Subtitles",
+                                    exoPlayer,
+                                    androidx.media3.common.C.TRACK_TYPE_TEXT
+                                ).build().show()
+                            }) {
+                                Icon(Icons.Default.Subtitles, contentDescription = "Subtitles", tint = Color.White)
+                            }
+
+                            // Audio Track Button
+                            IconButton(onClick = {
+                                TrackSelectionDialogBuilder(
+                                    context,
+                                    "Select Audio Track",
+                                    exoPlayer,
+                                    androidx.media3.common.C.TRACK_TYPE_AUDIO
+                                ).build().show()
+                            }) {
+                                Icon(Icons.Default.Audiotrack, contentDescription = "Audio Track", tint = Color.White)
+                            }
                         }
 
                         // Quality/Video Track Button
-                        IconButton(onClick = {
-                            TrackSelectionDialogBuilder(
-                                context,
-                                "Select Video Quality",
-                                exoPlayer,
-                                androidx.media3.common.C.TRACK_TYPE_VIDEO
-                            ).build().show()
-                        }) {
-                            Icon(Icons.Default.Settings, contentDescription = "Quality", tint = Color.White)
-                        }
-
-                        // Audio Track Button
-                        IconButton(onClick = {
-                            TrackSelectionDialogBuilder(
-                                context,
-                                "Select Audio Track",
-                                exoPlayer,
-                                androidx.media3.common.C.TRACK_TYPE_AUDIO
-                            ).build().show()
-                        }) {
-                            Icon(Icons.Default.Audiotrack, contentDescription = "Audio Track", tint = Color.White)
-                        }
-
                         Box {
                             IconButton(onClick = { showSpeedMenu = true }) {
                                 Icon(Icons.Default.Speed, contentDescription = "Speed", tint = Color.White)
@@ -367,7 +389,10 @@ fun PlayerScreen(
                             fontSize = 14.sp
                         )
                         Spacer(modifier = Modifier.width(16.dp))
-                        IconButton(onClick = { enterPiP(context) }) {
+                        IconButton(onClick = { 
+                            showControls = false
+                            enterPiP(context) 
+                        }) {
                             Icon(Icons.Default.PictureInPictureAlt, contentDescription = "PiP", tint = Color.White)
                         }
                     }

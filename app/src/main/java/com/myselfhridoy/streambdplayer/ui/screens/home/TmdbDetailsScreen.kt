@@ -22,6 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import coil.compose.AsyncImage
 import com.myselfhridoy.streambdplayer.data.models.MediaItem
 import com.myselfhridoy.streambdplayer.data.remote.TmdbApi
@@ -146,11 +149,38 @@ fun TmdbDetailsScreen(navController: NavController, mediaItemJson: String) {
 
                 Spacer(modifier = Modifier.height(24.dp))
                 
+                val scope = androidx.compose.runtime.rememberCoroutineScope()
                 Button(
                     onClick = {
-                        val dummyUrl = android.net.Uri.encode("https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4")
-                        val dummyTitle = android.net.Uri.encode(item.title ?: item.name ?: "Trailer")
-                        navController.navigate("player?url=$dummyUrl&title=$dummyTitle")
+                        scope.launch {
+                            try {
+                                val type = item.mediaType ?: if (item.name != null) "tv" else "movie"
+                                val response = if (type == "tv") {
+                                    com.myselfhridoy.streambdplayer.data.remote.NetworkClient.tmdbApi.getTvVideos(item.id)
+                                } else {
+                                    com.myselfhridoy.streambdplayer.data.remote.NetworkClient.tmdbApi.getMovieVideos(item.id)
+                                }
+                                
+                                val trailer = response.results.firstOrNull { it.site == "YouTube" && it.type == "Trailer" }
+                                    ?: response.results.firstOrNull { it.site == "YouTube" }
+                                    
+                                if (trailer != null) {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:${trailer.key}"))
+                                    intent.putExtra("force_fullscreen", true)
+                                    try {
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        // Fallback to browser if YouTube app is not installed
+                                        val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=${trailer.key}"))
+                                        context.startActivity(webIntent)
+                                    }
+                                } else {
+                                    Toast.makeText(context, "Trailer not found", Toast.LENGTH_SHORT).show()
+                                }
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Error fetching trailer", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray, contentColor = Color.White),
                     shape = RoundedCornerShape(8.dp),
@@ -214,7 +244,7 @@ fun TmdbDetailsScreen(navController: NavController, mediaItemJson: String) {
 
                 Button(
                     onClick = {
-                        val type = if (item.name != null) "tv" else "movie"
+                        val type = item.mediaType ?: if (item.name != null) "tv" else "movie"
                         var encodedTitle = android.net.Uri.encode(item.title ?: item.name ?: "Unknown")
                         var route = "selectServer?tmdbId=${item.id}&type=$type&title=$encodedTitle"
                         

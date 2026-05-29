@@ -29,6 +29,18 @@ interface TmdbApi {
         @Query("page") page: Int = 1
     ): TmdbResponse
 
+    @GET("movie/{movie_id}/videos")
+    suspend fun getMovieVideos(
+        @retrofit2.http.Path("movie_id") movieId: Int,
+        @Query("api_key") apiKey: String = API_KEY
+    ): com.myselfhridoy.streambdplayer.data.models.VideoResponse
+
+    @GET("tv/{series_id}/videos")
+    suspend fun getTvVideos(
+        @retrofit2.http.Path("series_id") seriesId: Int,
+        @Query("api_key") apiKey: String = API_KEY
+    ): com.myselfhridoy.streambdplayer.data.models.VideoResponse
+
     companion object {
         const val BASE_URL = "https://api.themoviedb.org/3/"
         const val IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"

@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -67,7 +68,7 @@ fun CategoriesScreen(
                 }
                 is CategoriesUiState.Success -> {
                     LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 120.dp),
+                        columns = GridCells.Adaptive(minSize = 100.dp),
                         contentPadding = PaddingValues(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -98,7 +99,7 @@ fun CategoryCard(category: CategoryItem, onClick: () -> Unit) {
                 .fillMaxWidth()
                 .aspectRatio(1f)
                 .clip(RoundedCornerShape(16.dp))
-                .background(SurfaceDark),
+                .background(Brush.linearGradient(listOf(Color(0xFF2A2A3A), Color(0xFF1A1A2A)))),
             contentAlignment = Alignment.Center
         ) {
             AsyncImage(
@@ -111,9 +112,10 @@ fun CategoryCard(category: CategoryItem, onClick: () -> Unit) {
         Text(
             text = category.name,
             color = Color.White,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
+            maxLines = 2,
             modifier = Modifier.padding(top = 8.dp)
         )
     }

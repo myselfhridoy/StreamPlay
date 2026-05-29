@@ -1,5 +1,7 @@
 package com.myselfhridoy.streambdplayer.ui.navigation
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -37,7 +39,11 @@ fun AppNavigation() {
     NavHost(
         navController = navController,
         startDestination = startDest,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        enterTransition = { fadeIn(animationSpec = tween(300)) },
+        exitTransition = { fadeOut(animationSpec = tween(300)) },
+        popEnterTransition = { fadeIn(animationSpec = tween(300)) },
+        popExitTransition = { fadeOut(animationSpec = tween(300)) }
     ) {
         composable("onboarding") {
             OnboardingScreen(navController = navController)

@@ -91,11 +91,12 @@ fun TmdbHomeContent(
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 100.dp) // Space for bottom nav
-    ) {
-        // Hero Section
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 100.dp) // Space for bottom nav
+        ) {
+            // Hero Section
         item {
             if (heroItems.isNotEmpty()) {
                 val heroItem = heroItems[heroIndex]
@@ -141,17 +142,18 @@ fun TmdbHomeContent(
                             overflow = TextOverflow.Ellipsis
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Row {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Button(
                                 onClick = {
-                                    navController.navigate("search")
+                                    val itemJson = android.net.Uri.encode(Gson().toJson(heroItem))
+                                    navController.navigate("tmdbDetails?item=$itemJson")
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
-                                Icon(Icons.Default.Search, contentDescription = "Search")
+                                Icon(Icons.Default.PlayArrow, contentDescription = "Play")
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Search", fontWeight = FontWeight.Bold)
+                                Text("Play / Details", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -183,6 +185,18 @@ fun TmdbHomeContent(
                     }
                 }
             }
+        }
+        
+        // Floating Search Button (Netflix Style)
+        IconButton(
+            onClick = { navController.navigate("search") },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 16.dp, end = 16.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(Color(0x88000000))
+        ) {
+            Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.White)
         }
     }
 }
