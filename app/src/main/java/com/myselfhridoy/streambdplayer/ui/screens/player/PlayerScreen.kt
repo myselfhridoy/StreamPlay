@@ -532,7 +532,12 @@ fun PlayerScreen(
                             showControls = false
                             enterPiP(context) 
                         }) {
-                            Icon(Icons.Default.PictureInPictureAlt, contentDescription = "PiP", tint = Color.White)
+                            Icon(
+                                Icons.Default.PictureInPictureAlt, 
+                                contentDescription = "PiP", 
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
                         }
                     }
                 }

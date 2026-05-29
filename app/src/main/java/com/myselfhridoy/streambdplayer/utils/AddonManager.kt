@@ -6,6 +6,10 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -200,6 +204,48 @@ object AddonManager {
                 fun onError(error: String) {
                     if (continuation.isActive) {
                         continuation.resume("[]")
+                    }
+                }
+
+                @JavascriptInterface
+                fun doFetch(reqId: String, url: String, optionsJson: String?) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            val requestBuilder = okhttp3.Request.Builder().url(url)
+                            if (optionsJson != null && optionsJson != "null" && optionsJson != "undefined") {
+                                val type = object : com.google.gson.reflect.TypeToken<Map<String, Any>>() {}.type
+                                val options: Map<String, Any>? = gson.fromJson(optionsJson, type)
+                                if (options != null) {
+                                    val method = (options["method"] as? String)?.uppercase() ?: "GET"
+                                    val headersMap = options["headers"] as? Map<String, String>
+                                    headersMap?.forEach { (k, v) ->
+                                        requestBuilder.addHeader(k, v)
+                                    }
+                                    
+                                    val bodyStr = options["body"] as? String
+                                    if (method == "POST" || method == "PUT" || method == "PATCH") {
+                                        val mediaType = "application/json".toMediaTypeOrNull()
+                                        val reqBody = (bodyStr ?: "").toRequestBody(mediaType)
+                                        requestBuilder.method(method, reqBody)
+                                    } else {
+                                        requestBuilder.method(method, null)
+                                    }
+                                }
+                            }
+                            
+                            val response = client.newCall(requestBuilder.build()).execute()
+                            val body = response.body?.string() ?: ""
+                            val status = response.code
+                            
+                            withContext(Dispatchers.Main) {
+                                val base64Body = android.util.Base64.encodeToString(body.toByteArray(), android.util.Base64.NO_WRAP)
+                                webView.evaluateJavascript("javascript:window.onAndroidFetchResponse('$reqId', $status, '$base64Body');", null)
+                            }
+                        } catch (e: Exception) {
+                            withContext(Dispatchers.Main) {
+                                webView.evaluateJavascript("javascript:window.onAndroidFetchError('$reqId', '${e.message?.replace("'", "\\'") ?: "Error"}');", null)
+                            }
+                        }
                     }
                 }
             }, interfaceName)
