@@ -1,6 +1,7 @@
 package com.myselfhridoy.streambdplayer.ui.screens.browser
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -227,27 +232,38 @@ fun ChannelBrowserScreen(
 @Composable
 fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
     val backgroundModifier = if (isSelected) {
-        Modifier.background(
-            Brush.horizontalGradient(
-                colors = listOf(Color(0xFFE50914), Color(0xFF9E060E))
-            ),
-            shape = RoundedCornerShape(20.dp)
-        )
+        Modifier.background(Color(0xFF2B3040), shape = RoundedCornerShape(20.dp))
     } else {
-        Modifier.background(SurfaceDark, shape = RoundedCornerShape(20.dp))
+        Modifier.background(Color.Transparent, shape = RoundedCornerShape(20.dp))
+    }
+    
+    val borderModifier = if (isSelected) {
+        Modifier.border(1.dp, Color.White, RoundedCornerShape(20.dp))
+    } else {
+        Modifier.border(1.dp, Color(0xFF40485C), RoundedCornerShape(20.dp))
     }
 
-    Box(
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .clickable { onClick() }
+            .then(borderModifier)
             .then(backgroundModifier)
-            .padding(horizontal = 20.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
+        if (isSelected) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(16.dp).padding(end = 4.dp)
+            )
+        }
         Text(
             text = text,
-            color = Color.White,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+            color = if (isSelected) Color.White else Color(0xFFA0AABF),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium
         )
     }
 }
@@ -256,14 +272,35 @@ fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
 fun ChannelItem(channel: Channel, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF1B1E28))
+            .border(
+                width = 1.dp,
+                color = Color(0xFF2D3344),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable { onClick() }
+            .padding(top = 16.dp, bottom = 12.dp, start = 8.dp, end = 8.dp)
     ) {
+        // Circular logo container
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(16.dp))
-                .background(SurfaceDark),
+                .size(64.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(Color(0xFF333344), Color(0xFF1A1A24))
+                    )
+                )
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color.White.copy(alpha = 0.2f), Color.Transparent)
+                    ),
+                    shape = androidx.compose.foundation.shape.CircleShape
+                ),
             contentAlignment = Alignment.Center
         ) {
             if (channel.logo.isNotEmpty()) {
@@ -271,25 +308,29 @@ fun ChannelItem(channel: Channel, onClick: () -> Unit) {
                     model = channel.logo,
                     contentDescription = channel.name,
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier.size(60.dp)
+                    modifier = Modifier.fillMaxSize(0.6f)
                 )
             } else {
                 Text(
                     text = channel.name.take(2).uppercase(),
                     color = Color.White,
-                    fontSize = 24.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
         }
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
         Text(
             text = channel.name,
             color = Color.White,
             fontSize = 12.sp,
-            maxLines = 2,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }

@@ -63,6 +63,9 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -86,6 +89,31 @@ fun PlayerScreen(
             } else emptyMap()
         } catch (e: Exception) {
             emptyMap()
+        }
+    }
+
+    // Handle Fullscreen and Landscape Orientation
+    DisposableEffect(Unit) {
+        val activity = context as? Activity
+        activity?.let {
+            it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            val window = it.window
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            WindowInsetsControllerCompat(window, window.decorView).apply {
+                hide(WindowInsetsCompat.Type.systemBars())
+                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        }
+        
+        onDispose {
+            activity?.let {
+                it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                val window = it.window
+                WindowCompat.setDecorFitsSystemWindows(window, true)
+                WindowInsetsControllerCompat(window, window.decorView).apply {
+                    show(WindowInsetsCompat.Type.systemBars())
+                }
+            }
         }
     }
 
@@ -327,7 +355,7 @@ fun PlayerScreen(
                         )
                     } else {
                         TVButton(
-                            icon = Icons.Default.KeyboardArrowDown,
+                            icon = Icons.Default.SkipPrevious,
                             onClick = {
                                 val prevChannel = PlaylistManager.playPrevious()
                                 if (prevChannel != null) {
@@ -386,7 +414,7 @@ fun PlayerScreen(
                         )
                     } else {
                         TVButton(
-                            icon = Icons.Default.KeyboardArrowUp,
+                            icon = Icons.Default.SkipNext,
                             onClick = {
                                 val nextChannel = PlaylistManager.playNext()
                                 if (nextChannel != null) {

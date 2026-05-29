@@ -69,7 +69,7 @@ fun CategoriesScreen(
                 }
                 is CategoriesUiState.Success -> {
                     LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 100.dp),
+                        columns = GridCells.Fixed(2),
                         contentPadding = PaddingValues(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -91,15 +91,25 @@ fun CategoriesScreen(
 
 @Composable
 fun CategoryCard(category: CategoryItem, onClick: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF1B1E28))
+            .border(
+                width = 1.dp,
+                color = Color(0xFF2D3344),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable { onClick() }
+            .padding(10.dp)
     ) {
+        // Circular Icon Container
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(20.dp))
+                .size(48.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape)
                 .background(
                     Brush.linearGradient(
                         colors = listOf(Color(0xFF333344), Color(0xFF1A1A24))
@@ -110,7 +120,7 @@ fun CategoryCard(category: CategoryItem, onClick: () -> Unit) {
                     brush = Brush.linearGradient(
                         colors = listOf(Color.White.copy(alpha = 0.2f), Color.Transparent)
                     ),
-                    shape = RoundedCornerShape(20.dp)
+                    shape = androidx.compose.foundation.shape.CircleShape
                 ),
             contentAlignment = Alignment.Center
         ) {
@@ -118,17 +128,21 @@ fun CategoryCard(category: CategoryItem, onClick: () -> Unit) {
                 model = category.logo,
                 contentDescription = category.name,
                 contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize(0.55f)
+                modifier = Modifier.fillMaxSize(0.6f)
             )
         }
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        // Category Name
         Text(
             text = category.name,
             color = Color.White,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            textAlign = TextAlign.Center,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
             maxLines = 2,
-            modifier = Modifier.padding(top = 10.dp)
+            lineHeight = 16.sp,
+            modifier = Modifier.weight(1f)
         )
     }
 }
