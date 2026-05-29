@@ -76,7 +76,7 @@ fun PlayerScreen(
         }
 
         val httpDataSourceFactory = DefaultHttpDataSource.Factory().apply {
-            headers.forEach { (key, value) -> setDefaultRequestProperty(key, value) }
+            setDefaultRequestProperties(headers)
         }
 
         ExoPlayer.Builder(context)

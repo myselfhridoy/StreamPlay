@@ -29,6 +29,9 @@ import com.myselfhridoy.streambdplayer.utils.AddonManager
 import com.myselfhridoy.streambdplayer.utils.StreamSource
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -45,7 +45,7 @@ object InfinityFreeBypass {
             val htmlContent = initialResponse.body?.string() ?: return@withContext null
 
             // Regex extraction
-            val aPattern = Pattern.compile("var\\s+a\\s*=\s*toNumbers\\(\"([a-fA-F0-9]+)\"\\)")
+            val aPattern = Pattern.compile("var\\s+a\\s*=\\s*toNumbers\\(\"([a-fA-F0-9]+)\"\\)")
             val bPattern = Pattern.compile("b\\s*=\\s*toNumbers\\(\"([a-fA-F0-9]+)\"\\)")
             val cPattern = Pattern.compile("c\\s*=\\s*toNumbers\\(\"([a-fA-F0-9]+)\"\\)")
             val urlPattern = Pattern.compile("location\\.href\\s*=\\s*\"([^\"]+)\"")
