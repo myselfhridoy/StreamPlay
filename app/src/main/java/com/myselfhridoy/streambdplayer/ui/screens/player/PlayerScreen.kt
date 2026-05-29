@@ -5,6 +5,7 @@ import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Rational
 import android.content.pm.ActivityInfo
 import android.view.KeyEvent
 import android.view.ViewGroup
