@@ -48,6 +48,7 @@ import com.myselfhridoy.streambdplayer.data.models.Channel
 import com.myselfhridoy.streambdplayer.ui.theme.BackgroundDark
 import com.myselfhridoy.streambdplayer.ui.theme.SurfaceDark
 import com.myselfhridoy.streambdplayer.utils.TokenParser
+import com.myselfhridoy.streambdplayer.utils.PlaylistManager
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
@@ -131,6 +132,9 @@ fun ChannelBrowserScreen(
                         items(state.channels) { channel ->
                             ChannelItem(channel = channel, onClick = {
                                 if (isResolving) return@ChannelItem
+                                
+                                PlaylistManager.currentPlaylist = state.channels
+                                PlaylistManager.currentIndex = state.channels.indexOf(channel)
                                 
                                 val encodedTitle = android.net.Uri.encode(channel.name)
                                 
