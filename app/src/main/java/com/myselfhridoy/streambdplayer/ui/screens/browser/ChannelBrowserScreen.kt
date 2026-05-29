@@ -42,12 +42,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.myselfhridoy.streambdplayer.data.models.Channel
 import com.myselfhridoy.streambdplayer.ui.theme.BackgroundDark
 import com.myselfhridoy.streambdplayer.ui.theme.SurfaceDark
+import com.myselfhridoy.streambdplayer.utils.TokenParser
+import com.google.gson.Gson
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,6 +66,9 @@ fun ChannelBrowserScreen(
     val uiState by viewModel.uiState.collectAsState()
     val categories by viewModel.categories.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
+    
+    val coroutineScope = rememberCoroutineScope()
+    var isResolving by remember { mutableStateOf(false) }
 
     LaunchedEffect(playlistUrl) {
         viewModel.loadPlaylist(playlistUrl, isLocal)
@@ -120,13 +128,75 @@ fun ChannelBrowserScreen(
                     ) {
                         items(state.channels) { channel ->
                             ChannelItem(channel = channel, onClick = {
-                                // Navigate to Player
-                                val encodedUrl = java.net.URLEncoder.encode(channel.url, java.nio.charset.StandardCharsets.UTF_8.toString())
+                                if (isResolving) return@ChannelItem
+                                
                                 val encodedTitle = java.net.URLEncoder.encode(channel.name, java.nio.charset.StandardCharsets.UTF_8.toString())
-                                navController.navigate("player?url=$encodedUrl&title=$encodedTitle")
+                                
+                                val baseHeaders = mutableMapOf<String, String>()
+                                channel.userAgent?.let { baseHeaders["User-Agent"] = it }
+                                channel.httpReferer?.let { baseHeaders["Referer"] = it }
+                                channel.origin?.let { baseHeaders["Origin"] = it }
+                                channel.cookie?.let { baseHeaders["Cookie"] = it }
+
+                                if (!channel.tokenUrl.isNullOrEmpty()) {
+                                    isResolving = true
+                                    coroutineScope.launch {
+                                        val resolved = TokenParser.resolveTokenForUrl(
+                                            baseUrl = channel.url,
+                                            tokenUrl = channel.tokenUrl,
+                                            tokenId = channel.tokenId?.toString(),
+                                            headers = baseHeaders,
+                                            tokenMatch = channel.tokenMatch,
+                                            tokenReplace = channel.tokenReplace
+                                        )
+                                        isResolving = false
+                                        
+                                        val finalUrl = java.net.URLEncoder.encode(resolved?.url ?: channel.url, "UTF-8")
+                                        val headersJson = java.net.URLEncoder.encode(Gson().toJson(resolved?.headers ?: baseHeaders), "UTF-8")
+                                        
+                                        val drmType = resolved?.drm?.type ?: channel.drm?.type
+                                        val drmLicense = resolved?.drm?.licenseServer ?: channel.drm?.licenseServer
+                                        var route = "player?url=$finalUrl&title=$encodedTitle&headers=$headersJson"
+                                        
+                                        if (drmType == "widevine" && !drmLicense.isNullOrEmpty()) {
+                                            val drmUrlEnc = java.net.URLEncoder.encode(drmLicense, "UTF-8")
+                                            route += "&drmLicenseUrl=$drmUrlEnc&drmSchemeUuid=edef8ba9-79d6-4ace-a3c8-27dcd51d21ed"
+                                        } else if (drmType == "clearkey" && !resolved?.drm?.rawKeyPair.isNullOrEmpty()) {
+                                            // Handling ClearKey would go here, currently ExoPlayer supports it if configured
+                                        }
+                                        
+                                        navController.navigate(route)
+                                    }
+                                } else {
+                                    val finalUrl = java.net.URLEncoder.encode(channel.url, "UTF-8")
+                                    val headersJson = java.net.URLEncoder.encode(Gson().toJson(baseHeaders), "UTF-8")
+                                    var route = "player?url=$finalUrl&title=$encodedTitle&headers=$headersJson"
+                                    
+                                    if (channel.drm?.type == "widevine" && !channel.drm.licenseServer.isNullOrEmpty()) {
+                                        val drmUrlEnc = java.net.URLEncoder.encode(channel.drm.licenseServer, "UTF-8")
+                                        route += "&drmLicenseUrl=$drmUrlEnc&drmSchemeUuid=edef8ba9-79d6-4ace-a3c8-27dcd51d21ed"
+                                    }
+                                    
+                                    navController.navigate(route)
+                                }
                             })
                         }
                     }
+                }
+            }
+        }
+        
+        if (isResolving) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.7f))
+                    .clickable(enabled = false) {},
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = Color(0xFFE50914))
+                    Text("Resolving Stream...", color = Color.White, modifier = Modifier.padding(top = 16.dp))
                 }
             }
         }
