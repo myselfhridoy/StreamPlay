@@ -62,7 +62,7 @@ fun ServerSelectionScreen(
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-            if (sourcesLoading) {
+            if (sourcesLoading && streamSources.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = Color(0xFFE50914))
@@ -70,7 +70,7 @@ fun ServerSelectionScreen(
                         Text("Fetching servers from addons...", color = Color.White)
                     }
                 }
-            } else if (streamSources.isEmpty()) {
+            } else if (!sourcesLoading && streamSources.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No sources found. Make sure you have addons enabled.", color = Color.Gray)
                 }
@@ -99,8 +99,8 @@ fun ServerSelectionScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column {
-                                    Text(source.provider, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(source.provider, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1)
                                     Text(source.type?.uppercase() ?: "STREAM", fontSize = 12.sp, color = Color.Gray)
                                 }
                                 Box(
@@ -109,6 +109,21 @@ fun ServerSelectionScreen(
                                         .padding(horizontal = 8.dp, vertical = 4.dp)
                                 ) {
                                     Text(source.quality, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (sourcesLoading) {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    CircularProgressIndicator(color = Color(0xFFE50914), modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Fetching more...", color = Color.Gray, fontSize = 14.sp)
                                 }
                             }
                         }

@@ -31,13 +31,18 @@ class ServerSelectionViewModel : ViewModel() {
         
         viewModelScope.launch {
             _isLoading.value = true
-            _streamSources.value = AddonManager.resolveFromAddons(
+            _streamSources.value = emptyList() // Clear previous
+
+            AddonManager.resolveFromAddons(
                 context, 
                 type, 
                 tmdbIdInt, 
                 season?.toIntOrNull(), 
                 episode?.toIntOrNull()
-            )
+            ) { newSources ->
+                _streamSources.value = _streamSources.value + newSources
+            }
+            
             _isLoading.value = false
             hasFetched = true
         }

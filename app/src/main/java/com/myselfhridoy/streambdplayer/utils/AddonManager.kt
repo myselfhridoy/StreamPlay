@@ -7,6 +7,9 @@ import android.webkit.WebView
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -108,12 +111,11 @@ object AddonManager {
         type: String, // "movie" or "tv"
         tmdbId: Int,
         season: Int? = null,
-        episode: Int? = null
-    ): List<StreamSource> = withContext(Dispatchers.IO) {
+        episode: Int? = null,
+        onSourceFound: (List<StreamSource>) -> Unit
+    ) = withContext(Dispatchers.IO) {
         val addons = getAddons(context)
         val activeAddons = addons.filter { it.enabled }
-        
-        val allSources = mutableListOf<StreamSource>()
         
         // Load crypto-js from assets
         val cryptoJsCode = try {
@@ -123,37 +125,48 @@ object AddonManager {
             ""
         }
 
-        for (addon in activeAddons) {
-            try {
-                var jsCode = addonScriptsCache[addon.id]
-                if (jsCode == null) {
-                    val req = Request.Builder().url(addon.url).build()
-                    val res = client.newCall(req).execute()
-                    if (res.isSuccessful) {
-                        jsCode = res.body?.string()
-                        if (jsCode != null) {
-                            addonScriptsCache[addon.id] = jsCode
+        val deferredResults = activeAddons.map { addon ->
+            async {
+                try {
+                    var jsCode = addonScriptsCache[addon.id]
+                    if (jsCode == null) {
+                        val req = Request.Builder().url(addon.url).build()
+                        val res = client.newCall(req).execute()
+                        if (res.isSuccessful) {
+                            jsCode = res.body?.string()
+                            if (jsCode != null) {
+                                addonScriptsCache[addon.id] = jsCode
+                            }
                         }
                     }
-                }
 
-                if (jsCode != null) {
-                    val sourcesJson = executeAddonInWebView(context, cryptoJsCode, jsCode, type, tmdbId, season, episode)
-                    if (sourcesJson.isNotEmpty() && sourcesJson != "null" && sourcesJson != "undefined") {
-                        val sourceType = object : TypeToken<List<StreamSource>>() {}.type
-                        val parsedSources: List<StreamSource> = gson.fromJson(sourcesJson, sourceType)
-                        val mapped = parsedSources.map { s ->
-                            s.copy(provider = if (s.provider.isBlank()) addon.name else s.provider)
+                    if (jsCode != null) {
+                        // 8 seconds timeout for each addon to prevent hanging
+                        val sourcesJson = withTimeoutOrNull(8000L) {
+                            executeAddonInWebView(context, cryptoJsCode, jsCode, type, tmdbId, season, episode)
                         }
-                        allSources.addAll(mapped)
+                        
+                        if (sourcesJson != null && sourcesJson.isNotEmpty() && sourcesJson != "null" && sourcesJson != "undefined") {
+                            val sourceType = object : TypeToken<List<StreamSource>>() {}.type
+                            val parsedSources: List<StreamSource> = gson.fromJson(sourcesJson, sourceType)
+                            val mapped = parsedSources.map { s ->
+                                s.copy(provider = if (s.provider.isBlank()) addon.name else s.provider)
+                            }
+                            if (mapped.isNotEmpty()) {
+                                withContext(Dispatchers.Main) {
+                                    onSourceFound(mapped)
+                                }
+                            }
+                        }
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
         
-        return@withContext allSources
+        // Wait for all addons to finish (or timeout)
+        deferredResults.awaitAll()
     }
 
     private suspend fun executeAddonInWebView(
