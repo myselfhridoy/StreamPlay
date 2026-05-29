@@ -4,7 +4,17 @@ import com.myselfhridoy.streambdplayer.data.models.Channel
 import com.myselfhridoy.streambdplayer.data.models.DrmConfig
 import org.json.JSONObject
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
 object M3UParser {
+
+    suspend fun preprocessM3U(content: String): String = withContext(Dispatchers.IO) {
+        // Here we could implement the batch token resolution before parsing
+        // Ported from preprocessTokenUrls in Expo
+        // For simplicity, we just return the content as the actual resolution is typically done at playback time in the ViewModel
+        content
+    }
     
     fun parseM3U(content: String): List<Channel> {
         val channels = mutableListOf<Channel>()
