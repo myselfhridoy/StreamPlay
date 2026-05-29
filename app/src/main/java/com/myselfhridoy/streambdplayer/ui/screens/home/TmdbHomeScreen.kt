@@ -185,7 +185,8 @@ fun TmdbHomeContent(
                     }
                 }
             }
-        }
+        } // Closes items(categories)
+        } // Closes LazyColumn
         
         // Floating Search Button (Netflix Style)
         IconButton(
