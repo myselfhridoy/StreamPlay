@@ -292,6 +292,7 @@ fun PlayerScreen(
                         }
                     }
                 }
+                }
 
                 // Center Controls
                 Row(
