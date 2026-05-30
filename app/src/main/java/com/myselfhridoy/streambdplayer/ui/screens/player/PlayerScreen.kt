@@ -163,6 +163,10 @@ fun PlayerScreen(
 
             val httpDataSourceFactory = DefaultHttpDataSource.Factory().apply {
                 setDefaultRequestProperties(finalHeaders)
+                val ua = finalHeaders["User-Agent"] ?: finalHeaders["user-agent"]
+                if (ua != null) {
+                    setUserAgent(ua)
+                }
             }
             val mediaSourceFactory = DefaultMediaSourceFactory(context).setDataSourceFactory(httpDataSourceFactory)
             val mediaItemBuilder = MediaItem.Builder().setUri(finalUri)
