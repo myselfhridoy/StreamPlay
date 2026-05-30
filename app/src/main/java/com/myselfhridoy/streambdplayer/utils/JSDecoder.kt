@@ -33,10 +33,12 @@ object JSDecoder {
                 val key = keyMatcher.group(1)
 
                 if (encrypted != null && key != null) {
-                    val decoded = Base64Utils.decode(encrypted)
+                    val decodedBytes = android.util.Base64.decode(encrypted, android.util.Base64.DEFAULT)
                     val sb = StringBuilder()
-                    for (i in decoded.indices) {
-                        val charCode = decoded[i].code xor key[i % key.length].code
+                    for (i in decodedBytes.indices) {
+                        val byteVal = decodedBytes[i].toInt() and 0xFF
+                        val keyChar = key[i % key.length].code
+                        val charCode = byteVal xor keyChar
                         sb.append(charCode.toChar())
                     }
                     decrypted = sb.toString()

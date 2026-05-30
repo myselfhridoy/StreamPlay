@@ -80,7 +80,13 @@ object TokenParser {
                         if (sep != -1) {
                             val k = payload.substring(0, sep).trim()
                             val v = payload.substring(sep + 1).trim()
-                            streamHeaders[k] = v
+                            val lowerK = k.lowercase()
+                            when {
+                                lowerK == "http-user-agent" -> streamHeaders["User-Agent"] = v
+                                lowerK == "http-referrer" || lowerK == "http-referer" -> streamHeaders["Referer"] = v
+                                lowerK == "http-origin" -> streamHeaders["Origin"] = v
+                                else -> streamHeaders[k] = v
+                            }
                         }
                         continue
                     }
@@ -227,7 +233,8 @@ object TokenParser {
                     val body = res.body?.string() ?: ""
                     val streams = extractAllUrls(body).filter { isStreamUrl(it) }
                     if (streams.isNotEmpty()) {
-                        val idx = (tokenId?.toIntOrNull() ?: 1) - 1
+                        val parsedId = idMatch.groupValues[1].toIntOrNull() ?: 1
+                        val idx = parsedId - 1
                         val streamUrl = streams.getOrElse(idx) { streams.first() }
                         return@withContext ResolvedToken(url = streamUrl, headers = getStreamHeaders(baseUrl, headers))
                     }
