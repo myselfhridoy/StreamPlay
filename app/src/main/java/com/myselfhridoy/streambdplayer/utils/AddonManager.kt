@@ -208,6 +208,16 @@ object AddonManager {
                 }
 
                 @JavascriptInterface
+                fun log(msg: String) {
+                    android.util.Log.d("AddonManagerJS", msg)
+                }
+
+                @JavascriptInterface
+                fun error(msg: String) {
+                    android.util.Log.e("AddonManagerJS", msg)
+                }
+
+                @JavascriptInterface
                 fun doFetch(reqId: String, url: String, optionsJson: String?) {
                     CoroutineScope(Dispatchers.IO).launch {
                         try {
@@ -217,14 +227,19 @@ object AddonManager {
                                 val options: Map<String, Any>? = gson.fromJson(optionsJson, type)
                                 if (options != null) {
                                     val method = (options["method"] as? String)?.uppercase() ?: "GET"
-                                    val headersMap = options["headers"] as? Map<String, String>
+                                    var contentTypeStr = "text/plain"
+                                    val headersMap = options["headers"] as? Map<String, Any>
                                     headersMap?.forEach { (k, v) ->
-                                        requestBuilder.addHeader(k, v)
+                                        val valStr = v.toString()
+                                        if (k.equals("content-type", ignoreCase = true)) {
+                                            contentTypeStr = valStr
+                                        }
+                                        requestBuilder.addHeader(k, valStr)
                                     }
                                     
-                                    val bodyStr = options["body"] as? String
+                                    val bodyStr = options["body"]?.toString()
                                     if (method == "POST" || method == "PUT" || method == "PATCH") {
-                                        val mediaType = "application/json".toMediaTypeOrNull()
+                                        val mediaType = contentTypeStr.toMediaTypeOrNull()
                                         val reqBody = (bodyStr ?: "").toRequestBody(mediaType)
                                         requestBuilder.method(method, reqBody)
                                     } else {
@@ -263,6 +278,11 @@ object AddonManager {
                         $cryptoJsCode
                     </script>
                     <script>
+                        window.console = {
+                            log: function() { AndroidBridge.log(Array.prototype.slice.call(arguments).join(' ')); },
+                            error: function() { AndroidBridge.error(Array.prototype.slice.call(arguments).join(' ')); },
+                            warn: function() { AndroidBridge.log(Array.prototype.slice.call(arguments).join(' ')); }
+                        };
                         window.originalFetch = window.fetch;
                         window.fetchPromises = {};
                         window.onAndroidFetchResponse = function(reqId, status, base64Body) {
