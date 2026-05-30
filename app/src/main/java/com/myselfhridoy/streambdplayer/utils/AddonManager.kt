@@ -263,6 +263,38 @@ object AddonManager {
                         $cryptoJsCode
                     </script>
                     <script>
+                        window.originalFetch = window.fetch;
+                        window.fetchPromises = {};
+                        window.onAndroidFetchResponse = function(reqId, status, base64Body) {
+                            var p = window.fetchPromises[reqId];
+                            if (p) {
+                                var bodyText = decodeURIComponent(escape(window.atob(base64Body)));
+                                var res = {
+                                    status: status,
+                                    ok: status >= 200 && status < 300,
+                                    text: function() { return Promise.resolve(bodyText); },
+                                    json: function() { return Promise.resolve(JSON.parse(bodyText)); }
+                                };
+                                p.resolve(res);
+                                delete window.fetchPromises[reqId];
+                            }
+                        };
+                        window.onAndroidFetchError = function(reqId, error) {
+                            var p = window.fetchPromises[reqId];
+                            if (p) {
+                                p.reject(new Error(error));
+                                delete window.fetchPromises[reqId];
+                            }
+                        };
+                        window.fetch = function(url, options) {
+                            return new Promise(function(resolve, reject) {
+                                var reqId = Math.random().toString(36).substring(7);
+                                window.fetchPromises[reqId] = { resolve: resolve, reject: reject };
+                                var optionsJson = options ? JSON.stringify(options) : "null";
+                                AndroidBridge.doFetch(reqId, url, optionsJson);
+                            });
+                        };
+
                         try {
                             var decodedCode = decodeURIComponent(escape(window.atob("$addonCodeBase64")));
                             var parserFunc = new Function("CryptoJS", decodedCode)(CryptoJS);
