@@ -2,6 +2,7 @@ package com.myselfhridoy.streambdplayer.ui.screens.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDownload
@@ -59,11 +60,13 @@ fun MobileHomeScreen(navController: NavController) {
                     )
                 }
             }
-        }
+        },
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0.dp)
     ) { innerPadding ->
         Box(
             modifier = Modifier
-                .padding(innerPadding)
+                .fillMaxSize()
+                .padding(bottom = innerPadding.calculateBottomPadding())
                 .background(BackgroundDark)
         ) {
             when (selectedItem) {

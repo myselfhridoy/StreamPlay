@@ -94,7 +94,7 @@ fun TmdbHomeContent(
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 100.dp) // Space for bottom nav
+            contentPadding = PaddingValues(bottom = 16.dp)
         ) {
             // Hero Section
         item {
