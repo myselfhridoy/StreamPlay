@@ -222,7 +222,14 @@ fun PlayerScreen(
             override fun onPlaybackStateChanged(playbackState: Int) {
                 if (playbackState == Player.STATE_READY) {
                     duration = exoPlayer.duration.coerceAtLeast(0L)
-                    currentIsVod = !exoPlayer.isCurrentMediaItemLive
+                    val isLiveStream = exoPlayer.isCurrentMediaItemLive || 
+                                       exoPlayer.isCurrentMediaItemDynamic || 
+                                       exoPlayer.duration == C.TIME_UNSET
+                    if (isLiveStream) {
+                        currentIsVod = false
+                    } else if (exoPlayer.duration > 0 && exoPlayer.duration != C.TIME_UNSET) {
+                        currentIsVod = true
+                    }
                 }
             }
             override fun onPlayerError(error: PlaybackException) {
