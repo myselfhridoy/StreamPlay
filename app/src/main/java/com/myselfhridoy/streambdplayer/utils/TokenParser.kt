@@ -39,7 +39,11 @@ object TokenParser {
 
         // 0. streamPlay WebViewSniffer
         if (lowerTokenUrl == "streamplay") {
-            return@withContext WebViewSniffer.sniff(context, baseUrl, headers)
+            val isVidsrc = baseUrl.contains("vsembed") || baseUrl.contains("vidsrc")
+            val userAgent = if (isVidsrc) {
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            } else null
+            return@withContext WebViewSniffer.sniff(context, baseUrl, headers, userAgent)
         }
 
         // 1. InfinityFree

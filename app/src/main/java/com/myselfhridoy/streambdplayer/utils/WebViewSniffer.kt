@@ -187,27 +187,14 @@ object WebViewSniffer {
         context: Context,
         url: String,
         headers: Map<String, String>? = null,
+        userAgent: String? = null,
         timeoutMs: Long = 15000L
     ): ResolvedToken? = withContext(Dispatchers.Main) {
         withTimeoutOrNull(timeoutMs) {
             suspendCancellableCoroutine { continuation ->
                 var isResolved = false
                 val webView = WebView(context)
-
-                fun finish(token: ResolvedToken?) {
-                    if (!isResolved) {
-                        isResolved = true
-                        webView.post { webView.destroy() }
-                        if (continuation.isActive) {
-                            continuation.resume(token)
-                        }
-                    }
-                }
-
-                // Simulate layout to allow touch events (1080x1920)
-                webView.layout(0, 0, 1080, 1920)
-
-                // Auto-clicker for cross-origin iframes that require interaction
+                
                 val handler = android.os.Handler(android.os.Looper.getMainLooper())
                 val tapRunnable = object : Runnable {
                     override fun run() {
@@ -227,14 +214,31 @@ object WebViewSniffer {
                         handler.postDelayed(this, 1500) // Click every 1.5 seconds
                     }
                 }
+
+                fun finish(token: ResolvedToken?) {
+                    if (!isResolved) {
+                        isResolved = true
+                        handler.removeCallbacks(tapRunnable)
+                        webView.post { webView.destroy() }
+                        if (continuation.isActive) {
+                            continuation.resume(token)
+                        }
+                    }
+                }
+
+                // Simulate layout to allow touch events (1080x1920)
+                webView.layout(0, 0, 1080, 1920)
                 handler.postDelayed(tapRunnable, 2500) // Start after 2.5s
 
                 webView.settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
-                    mediaPlaybackRequiresUserGesture = true // Prevent background audio
+                    mediaPlaybackRequiresUserGesture = false // Allow autoplay to avoid requiring interaction
                     loadsImagesAutomatically = false // Optimize
                     blockNetworkImage = true // Optimize
+                    if (userAgent != null) {
+                        userAgentString = userAgent
+                    }
                 }
 
                 val defaultUserAgent = webView.settings.userAgentString
@@ -352,6 +356,7 @@ object WebViewSniffer {
                 continuation.invokeOnCancellation {
                     if (!isResolved) {
                         isResolved = true
+                        handler.removeCallbacks(tapRunnable)
                         webView.post { webView.destroy() }
                     }
                 }
@@ -366,7 +371,9 @@ object WebViewSniffer {
                lowerUrl.contains(".mp4") || 
                lowerUrl.contains(".mkv") || 
                lowerUrl.contains(".flv") ||
-               lowerUrl.contains(".mpd")
+               lowerUrl.contains(".mpd") ||
+               lowerUrl.contains(".webm") ||
+               lowerUrl.contains(".ts")
     }
 
     private fun isAdOrTracker(url: String): Boolean {
