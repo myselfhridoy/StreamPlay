@@ -360,25 +360,44 @@ object AddonManager {
                             var parserFunc;
                             try {
                                 parserFunc = new Function("CryptoJS", decodedCode)(CryptoJS);
-                            } catch(e) {}
+                            } catch(e) {
+                                AndroidBridge.log("new Function failed: " + e.toString());
+                            }
                             
                             if (typeof parserFunc !== 'function') {
+                                // Snapshot existing window keys before eval
+                                var keysBefore = {};
+                                for (var k in window) { keysBefore[k] = true; }
+                                
                                 eval(decodedCode);
-                                ${if (!functionName.isNullOrBlank()) "parserFunc = $functionName;" else ""}
+                                
+                                // Try explicit functionName from registry first
+                                ${if (!functionName.isNullOrBlank()) "if (typeof window['$functionName'] === 'function') parserFunc = window['$functionName'];" else ""}
+                                
+                                // Find newly added functions after eval
                                 if (typeof parserFunc !== 'function') {
-                                    if (typeof resolveStream === 'function') parserFunc = resolveStream;
-                                    else if (typeof resolve === 'function') parserFunc = resolve;
+                                    for (var k in window) {
+                                        if (!keysBefore[k] && typeof window[k] === 'function') {
+                                            parserFunc = window[k];
+                                            AndroidBridge.log("Auto-discovered function: " + k);
+                                            break;
+                                        }
+                                    }
                                 }
                             }
                             
                             if (typeof parserFunc === 'function') {
-                                parserFunc("$type", "$tmdbId", $seasonArg, $episodeArg)
-                                    .then(function(sources) {
-                                        AndroidBridge.onResult(JSON.stringify(sources));
-                                    })
-                                    .catch(function(err) {
+                                var result = parserFunc("$type", "$tmdbId", $seasonArg, $episodeArg);
+                                // Handle both Promise and non-Promise returns
+                                if (result && typeof result.then === 'function') {
+                                    result.then(function(sources) {
+                                        AndroidBridge.onResult(JSON.stringify(sources || []));
+                                    }).catch(function(err) {
                                         AndroidBridge.onError(err.toString());
                                     });
+                                } else {
+                                    AndroidBridge.onResult(JSON.stringify(result || []));
+                                }
                             } else {
                                 AndroidBridge.onError("Parser is not a function");
                             }
