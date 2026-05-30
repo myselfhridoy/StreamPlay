@@ -40,7 +40,8 @@ data class Addon(
     val id: String,
     val name: String,
     val url: String,
-    val enabled: Boolean
+    val enabled: Boolean,
+    val functionName: String? = null
 )
 
 object AddonManager {
@@ -147,7 +148,7 @@ object AddonManager {
                     if (jsCode != null) {
                         // 8 seconds timeout for each addon to prevent hanging
                         val sourcesJson = withTimeoutOrNull(8000L) {
-                            executeAddonInWebView(context, cryptoJsCode, jsCode, type, tmdbId, season, episode)
+                            executeAddonInWebView(context, cryptoJsCode, jsCode, addon.name, addon.url, addon.functionName, type, tmdbId, season, episode)
                         }
                         
                         if (sourcesJson != null && sourcesJson.isNotEmpty() && sourcesJson != "null" && sourcesJson != "undefined") {
@@ -177,6 +178,9 @@ object AddonManager {
         context: Context,
         cryptoJsCode: String,
         addonCode: String,
+        addonName: String,
+        addonUrl: String,
+        functionName: String?,
         type: String,
         tmdbId: Int,
         season: Int?,
@@ -362,7 +366,31 @@ object AddonManager {
 
                         try {
                             var decodedCode = decodeURIComponent(escape(window.atob("$addonCodeBase64")));
+                            
+                            // Try Expo format first (function body returning the parser)
                             var parserFunc = new Function("CryptoJS", decodedCode)(CryptoJS);
+                            
+                            // If it didn't return a function, try evaluating globally and grabbing by name
+                            if (typeof parserFunc !== 'function') {
+                                // We guess the function name based on the addon name or rely on 'window' injection
+                                eval(decodedCode);
+                                // The user's timepassbdwebStream might be defined globally now
+                                // We can search for the first function that contains 'Stream' or use a known name
+                                if ("$functionName" !== "null" && typeof window["$functionName"] === 'function') {
+                                    parserFunc = window["$functionName"];
+                                } else {
+                                    for (var key in window) {
+                                        if (typeof window[key] === 'function' && key.toLowerCase().indexOf('stream') !== -1) {
+                                            parserFunc = window[key];
+                                            break;
+                                        }
+                                    }
+                                }
+                                // Fallback: just try the old known name if any
+                                if (typeof parserFunc !== 'function' && typeof timepassbdwebStream === 'function') {
+                                    parserFunc = timepassbdwebStream;
+                                }
+                            }
                             
                             if (typeof parserFunc === 'function') {
                                 parserFunc("$type", "$tmdbId", $seasonArg, $episodeArg)
