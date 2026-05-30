@@ -314,7 +314,7 @@ object M3UParser {
                 channels.add(Channel(
                     name = title,
                     url = parsed.cleanUrl,
-                    logo = image,
+                    logo = image ?: "",
                     group = group,
                     userAgent = parsed.headers["user-agent"],
                     httpReferer = parsed.headers["referer"],
@@ -372,7 +372,7 @@ object M3UParser {
                 channels.add(Channel(
                     name = name,
                     url = parsed.cleanUrl,
-                    logo = logo.ifEmpty { null },
+                    logo = logo,
                     group = group,
                     userAgent = ua,
                     httpReferer = ref,
