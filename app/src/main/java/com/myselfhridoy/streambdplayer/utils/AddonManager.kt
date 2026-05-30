@@ -394,7 +394,7 @@ object AddonManager {
             webView.loadDataWithBaseURL("file:///android_asset/dummy.html", html, "text/html", "UTF-8", null)
 
             continuation.invokeOnCancellation {
-                webView.destroy()
+                webView.post { webView.destroy() }
             }
         }
     }
