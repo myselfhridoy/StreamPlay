@@ -207,7 +207,7 @@ object WebViewSniffer {
                 webView.settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
-                    mediaPlaybackRequiresUserGesture = false // Allow autoplay
+                    mediaPlaybackRequiresUserGesture = true // Prevent background audio
                     loadsImagesAutomatically = false // Optimize
                     blockNetworkImage = true // Optimize
                 }
@@ -239,8 +239,12 @@ object WebViewSniffer {
                         } catch (e: Exception) {}
                         
                         // User-Agent ও Referer দরকার হতে পারে
-                        capturedHeaders["Referer"] = url
-                        capturedHeaders["User-Agent"] = defaultUserAgent
+                        if (!capturedHeaders.keys.any { it.equals("Referer", ignoreCase = true) }) {
+                            capturedHeaders["Referer"] = url
+                        }
+                        if (!capturedHeaders.keys.any { it.equals("User-Agent", ignoreCase = true) }) {
+                            capturedHeaders["User-Agent"] = defaultUserAgent
+                        }
                         
                         finish(ResolvedToken(url = streamUrl, headers = capturedHeaders))
                     }
@@ -255,15 +259,25 @@ object WebViewSniffer {
 
                         // Check if it's a media stream
                         if (isMediaStream(reqUrl)) {
-                            val capturedHeaders = request.requestHeaders?.toMutableMap() ?: mutableMapOf()
+                            val capturedHeaders = mutableMapOf<String, String>()
+                            request.requestHeaders?.forEach { (k, v) ->
+                                capturedHeaders[k] = v
+                            }
                             
                             val cookieString = CookieManager.getInstance().getCookie(reqUrl)
                             val parentCookie = CookieManager.getInstance().getCookie(url)
-                            if (!cookieString.isNullOrEmpty()) capturedHeaders["Cookie"] = cookieString
-                            else if (!parentCookie.isNullOrEmpty()) capturedHeaders["Cookie"] = parentCookie
+                            if (!cookieString.isNullOrEmpty()) {
+                                capturedHeaders["Cookie"] = cookieString
+                            } else if (!parentCookie.isNullOrEmpty() && !capturedHeaders.containsKey("Cookie")) {
+                                capturedHeaders["Cookie"] = parentCookie
+                            }
                             
-                            capturedHeaders["Referer"] = url
-                            capturedHeaders["User-Agent"] = request.requestHeaders?.get("User-Agent") ?: view?.settings?.userAgentString ?: ""
+                            if (!capturedHeaders.keys.any { it.equals("Referer", ignoreCase = true) }) {
+                                capturedHeaders["Referer"] = url
+                            }
+                            if (!capturedHeaders.keys.any { it.equals("User-Agent", ignoreCase = true) }) {
+                                capturedHeaders["User-Agent"] = request.requestHeaders?.get("User-Agent") ?: view?.settings?.userAgentString ?: ""
+                            }
 
                             finish(ResolvedToken(url = reqUrl, headers = capturedHeaders))
                             return WebResourceResponse("text/plain", "UTF-8", null) // Block further loading
@@ -321,6 +335,7 @@ object WebViewSniffer {
     }
 
     private fun isMediaStream(url: String): Boolean {
+        if (url.startsWith("blob:", ignoreCase = true) || url.startsWith("data:", ignoreCase = true)) return false
         val lowerUrl = url.lowercase()
         return lowerUrl.contains(".m3u8") || 
                lowerUrl.contains(".mp4") || 
