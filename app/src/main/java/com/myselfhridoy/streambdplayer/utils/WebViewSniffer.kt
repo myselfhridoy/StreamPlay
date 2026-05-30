@@ -162,6 +162,23 @@ object WebViewSniffer {
             Object.defineProperty(window, 'videojs', { value: vjs, writable: true, configurable: true });
         }
     });
+    // 9. Autoplay clicker and muter
+    setInterval(function() {
+        // Mute and try to play
+        document.querySelectorAll('video, audio').forEach(function(v) {
+            v.muted = true;
+            if (v.paused) {
+                var p = v.play();
+                if (p !== undefined) p.catch(function(e) {});
+            }
+        });
+        
+        // Click play buttons
+        var playBtnSelectors = ['.play-btn', '.vjs-big-play-button', '.jw-icon-display', '.plyr__control--overlaid', 'button[title="Play"]', '.play'];
+        document.querySelectorAll(playBtnSelectors.join(',')).forEach(function(btn) {
+            btn.click();
+        });
+    }, 1000);
 })();
 """.trimIndent()
 
@@ -195,6 +212,8 @@ object WebViewSniffer {
                     blockNetworkImage = true // Optimize
                 }
 
+                val defaultUserAgent = webView.settings.userAgentString
+
                 webView.addJavascriptInterface(object : Any() {
                     @android.webkit.JavascriptInterface
                     fun onStreamFound(streamUrl: String, headersJson: String) {
@@ -219,8 +238,9 @@ object WebViewSniffer {
                             }
                         } catch (e: Exception) {}
                         
-                        // Referer ও দরকার হতে পারে
+                        // User-Agent ও Referer দরকার হতে পারে
                         capturedHeaders["Referer"] = url
+                        capturedHeaders["User-Agent"] = defaultUserAgent
                         
                         finish(ResolvedToken(url = streamUrl, headers = capturedHeaders))
                     }
@@ -243,6 +263,7 @@ object WebViewSniffer {
                             else if (!parentCookie.isNullOrEmpty()) capturedHeaders["Cookie"] = parentCookie
                             
                             capturedHeaders["Referer"] = url
+                            capturedHeaders["User-Agent"] = request.requestHeaders?.get("User-Agent") ?: view?.settings?.userAgentString ?: ""
 
                             finish(ResolvedToken(url = reqUrl, headers = capturedHeaders))
                             return WebResourceResponse("text/plain", "UTF-8", null) // Block further loading
