@@ -204,6 +204,31 @@ object WebViewSniffer {
                     }
                 }
 
+                // Simulate layout to allow touch events (1080x1920)
+                webView.layout(0, 0, 1080, 1920)
+
+                // Auto-clicker for cross-origin iframes that require interaction
+                val handler = android.os.Handler(android.os.Looper.getMainLooper())
+                val tapRunnable = object : Runnable {
+                    override fun run() {
+                        if (isResolved) return
+                        try {
+                            val x = 540f
+                            val y = 960f
+                            val downTime = android.os.SystemClock.uptimeMillis()
+                            val eventTime = downTime + 50
+                            val downEvent = android.view.MotionEvent.obtain(downTime, downTime, android.view.MotionEvent.ACTION_DOWN, x, y, 0)
+                            val upEvent = android.view.MotionEvent.obtain(downTime, eventTime, android.view.MotionEvent.ACTION_UP, x, y, 0)
+                            webView.dispatchTouchEvent(downEvent)
+                            webView.dispatchTouchEvent(upEvent)
+                            downEvent.recycle()
+                            upEvent.recycle()
+                        } catch (e: Exception) {}
+                        handler.postDelayed(this, 1500) // Click every 1.5 seconds
+                    }
+                }
+                handler.postDelayed(tapRunnable, 2500) // Start after 2.5s
+
                 webView.settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
