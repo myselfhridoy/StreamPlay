@@ -20,14 +20,23 @@ object WebViewSniffer {
     if (window.__snifferInjected) return;
     window.__snifferInjected = true;
 
-    var EXTS = ['.m3u8', '.mp4', '.mpd', '.mkv', '.flv', '.webm', '.ts'];
+    var EXTS = ['.m3u8', '.mp4', '.mpd', '.mkv', '.flv', '.webm'];
     var reported = new Set();
 
     function isMedia(url) {
         if (!url || typeof url !== 'string') return false;
         if (url.startsWith('blob:') || url.startsWith('data:')) return false;
         var lower = url.toLowerCase();
-        return EXTS.some(function(e) { return lower.includes(e); });
+        
+        // Check for common video extensions
+        if (EXTS.some(function(e) { return lower.includes(e); })) return true;
+        
+        // Strict check for .ts files (only if it looks like an HLS segment)
+        if (/\.(ts)(\?|$)/.test(lower) && (lower.includes("/seg") || lower.includes("/hls") || lower.includes("segment") || lower.includes("/chunk"))) {
+            return true;
+        }
+        
+        return false;
     }
 
     function report(url, headersJson) {
@@ -322,27 +331,35 @@ object WebViewSniffer {
 
                     override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                         super.onPageStarted(view, url, favicon)
-                        view?.evaluateJavascript(INTERCEPT_SCRIPT, null)
+                        try {
+                            view?.evaluateJavascript(INTERCEPT_SCRIPT, null)
+                        } catch (e: Exception) {}
                     }
 
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
-                        view?.evaluateJavascript(INTERCEPT_SCRIPT, null)
-                        // SPA route change এর জন্য retry
-                        view?.postDelayed({ view.evaluateJavascript(INTERCEPT_SCRIPT, null) }, 1500)
-                        view?.postDelayed({ view.evaluateJavascript(INTERCEPT_SCRIPT, null) }, 4000)
-                        
-                        // Inject a script to simulate a click if the player requires interaction
-                        view?.evaluateJavascript(
-                            """
-                            (function() {
-                                var btns = document.querySelectorAll('button, .play-btn, .plyr__control--overlaid, .vjs-big-play-button');
-                                for(var i=0; i<btns.length; i++){
-                                    btns[i].click();
-                                }
-                            })();
-                            """.trimIndent(), null
-                        )
+                        try {
+                            view?.evaluateJavascript(INTERCEPT_SCRIPT, null)
+                            // SPA route change এর জন্য retry
+                            view?.postDelayed({ 
+                                try { view.evaluateJavascript(INTERCEPT_SCRIPT, null) } catch (e: Exception) {} 
+                            }, 1500)
+                            view?.postDelayed({ 
+                                try { view.evaluateJavascript(INTERCEPT_SCRIPT, null) } catch (e: Exception) {} 
+                            }, 4000)
+                            
+                            // Inject a script to simulate a click if the player requires interaction
+                            view?.evaluateJavascript(
+                                """
+                                (function() {
+                                    var btns = document.querySelectorAll('button, .play-btn, .plyr__control--overlaid, .vjs-big-play-button');
+                                    for(var i=0; i<btns.length; i++){
+                                        btns[i].click();
+                                    }
+                                })();
+                                """.trimIndent(), null
+                            )
+                        } catch (e: Exception) {}
                     }
                 }
 
@@ -367,13 +384,20 @@ object WebViewSniffer {
     private fun isMediaStream(url: String): Boolean {
         if (url.startsWith("blob:", ignoreCase = true) || url.startsWith("data:", ignoreCase = true)) return false
         val lowerUrl = url.lowercase()
+        
+        // Strict check for .ts
+        if (Regex("""\.(ts)(\?|${'$'})""").containsMatchIn(lowerUrl) && 
+            (lowerUrl.contains("/seg") || lowerUrl.contains("/hls") || 
+             lowerUrl.contains("segment") || lowerUrl.contains("/chunk"))) {
+             return true
+        }
+        
         return lowerUrl.contains(".m3u8") || 
                lowerUrl.contains(".mp4") || 
                lowerUrl.contains(".mkv") || 
                lowerUrl.contains(".flv") ||
                lowerUrl.contains(".mpd") ||
-               lowerUrl.contains(".webm") ||
-               lowerUrl.contains(".ts")
+               lowerUrl.contains(".webm")
     }
 
     private fun isAdOrTracker(url: String): Boolean {
