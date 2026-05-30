@@ -284,7 +284,7 @@ object AddonManager {
                             val headersJsonStr = gson.toJson(responseHeadersMap)
                             
                             withContext(Dispatchers.Main) {
-                                val base64Body = android.util.Base64.encodeToString(body.toByteArray(), android.util.Base64.NO_WRAP)
+                                val base64Body = android.util.Base64.encodeToString(bodyBytes, android.util.Base64.NO_WRAP)
                                 val safeHeadersJson = android.util.Base64.encodeToString(headersJsonStr.toByteArray(), android.util.Base64.NO_WRAP)
                                 webView.evaluateJavascript("javascript:window.onAndroidFetchResponse('$reqId', $status, '$safeHeadersJson', '$base64Body');", null)
                             }
@@ -320,7 +320,12 @@ object AddonManager {
                         window.onAndroidFetchResponse = function(reqId, status, headersBase64, base64Body) {
                             var p = window.fetchPromises[reqId];
                             if (p) {
-                                var bodyText = decodeURIComponent(escape(window.atob(base64Body)));
+                                var bodyText;
+                                try {
+                                    bodyText = decodeURIComponent(escape(window.atob(base64Body)));
+                                } catch (e) {
+                                    bodyText = window.atob(base64Body);
+                                }
                                 var headersJson = decodeURIComponent(escape(window.atob(headersBase64)));
                                 var headersObj = JSON.parse(headersJson);
                                 var res = {
