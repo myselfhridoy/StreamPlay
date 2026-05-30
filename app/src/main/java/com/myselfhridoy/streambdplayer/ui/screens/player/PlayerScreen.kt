@@ -629,8 +629,7 @@ fun PlayerScreen(
                             Icon(
                                 Icons.Default.PictureInPictureAlt, 
                                 contentDescription = "PiP", 
-                                tint = Color.White,
-                                modifier = Modifier.size(32.dp)
+                                tint = Color.White
                             )
                         }
                     }
