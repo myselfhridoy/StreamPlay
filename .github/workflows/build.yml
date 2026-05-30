@@ -30,8 +30,32 @@ jobs:
     - name: Build with Gradle
       run: ./gradlew assembleDebug --no-daemon
 
-    - name: Upload APK
+    - name: Upload Universal APK
       uses: actions/upload-artifact@v4
       with:
-        name: streambd-player-apk
-        path: app/build/outputs/apk/debug/*.apk
+        name: streambd-player-universal
+        path: app/build/outputs/apk/debug/app-universal-debug.apk
+
+    - name: Upload arm64-v8a APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: streambd-player-arm64-v8a
+        path: app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
+
+    - name: Upload armeabi-v7a APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: streambd-player-armeabi-v7a
+        path: app/build/outputs/apk/debug/app-armeabi-v7a-debug.apk
+
+    - name: Upload x86_64 APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: streambd-player-x86_64
+        path: app/build/outputs/apk/debug/app-x86_64-debug.apk
+
+    - name: Upload x86 APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: streambd-player-x86
+        path: app/build/outputs/apk/debug/app-x86-debug.apk
