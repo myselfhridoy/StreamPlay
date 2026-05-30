@@ -306,21 +306,18 @@ object AddonManager {
 
             val addonCodeBase64 = android.util.Base64.encodeToString(addonCode.toByteArray(), android.util.Base64.NO_WRAP)
 
-            // Inject the cryptoJS and addonCode into an HTML file loaded from file:// to bypass CORS
-            val html = """
-                <html>
-                <head>
-                    <script>
-                        $cryptoJsCode
-                    </script>
-                    <script>
+            // Inject the cryptoJS and addonCode directly via evaluateJavascript
+            val script = """
+                (function() {
+                    try {
+                        // Polyfill fetch
                         window.console = {
                             log: function() { AndroidBridge.log(Array.prototype.slice.call(arguments).join(' ')); },
                             error: function() { AndroidBridge.error(Array.prototype.slice.call(arguments).join(' ')); },
                             warn: function() { AndroidBridge.log(Array.prototype.slice.call(arguments).join(' ')); }
                         };
                         window.originalFetch = window.fetch;
-                        window.fetchPromises = {};
+                        window.fetchPromises = window.fetchPromises || {};
                         window.onAndroidFetchResponse = function(reqId, status, headersBase64, base64Body) {
                             var p = window.fetchPromises[reqId];
                             if (p) {
@@ -364,55 +361,59 @@ object AddonManager {
                             });
                         };
 
+                        // Load CryptoJS if not already defined
+                        if (typeof CryptoJS === 'undefined') {
+                            eval(decodeURIComponent(escape(window.atob("${android.util.Base64.encodeToString(cryptoJsCode.toByteArray(), android.util.Base64.NO_WRAP)}"))));
+                        }
+
+                        var decodedCode = decodeURIComponent(escape(window.atob("$addonCodeBase64")));
+                        
+                        // Try Expo format first (function body returning the parser)
+                        var parserFunc;
                         try {
-                            var decodedCode = decodeURIComponent(escape(window.atob("$addonCodeBase64")));
-                            
-                            // Try Expo format first (function body returning the parser)
-                            var parserFunc = new Function("CryptoJS", decodedCode)(CryptoJS);
-                            
-                            // If it didn't return a function, try evaluating globally and grabbing by name
-                            if (typeof parserFunc !== 'function') {
-                                // We guess the function name based on the addon name or rely on 'window' injection
-                                eval(decodedCode);
-                                // The user's timepassbdwebStream might be defined globally now
-                                // We can search for the first function that contains 'Stream' or use a known name
-                                if ("$functionName" !== "null" && typeof window["$functionName"] === 'function') {
-                                    parserFunc = window["$functionName"];
-                                } else {
-                                    for (var key in window) {
-                                        if (typeof window[key] === 'function' && key.toLowerCase().indexOf('stream') !== -1) {
-                                            parserFunc = window[key];
-                                            break;
-                                        }
+                            parserFunc = new Function("CryptoJS", decodedCode)(CryptoJS);
+                        } catch(e) { }
+                        
+                        // If it didn't return a function, try evaluating globally and grabbing by name
+                        if (typeof parserFunc !== 'function') {
+                            // We guess the function name based on the addon name or rely on 'window' injection
+                            eval(decodedCode);
+                            // The user's timepassbdwebStream might be defined globally now
+                            // We can search for the first function that contains 'Stream' or use a known name
+                            if ("$functionName" !== "null" && typeof window["$functionName"] === 'function') {
+                                parserFunc = window["$functionName"];
+                            } else {
+                                for (var key in window) {
+                                    if (typeof window[key] === 'function' && key.toLowerCase().indexOf('stream') !== -1) {
+                                        parserFunc = window[key];
+                                        break;
                                     }
                                 }
-                                // Fallback: just try the old known name if any
-                                if (typeof parserFunc !== 'function' && typeof timepassbdwebStream === 'function') {
-                                    parserFunc = timepassbdwebStream;
-                                }
                             }
-                            
-                            if (typeof parserFunc === 'function') {
-                                parserFunc("$type", "$tmdbId", $seasonArg, $episodeArg)
-                                    .then(function(sources) {
-                                        AndroidBridge.onResult(JSON.stringify(sources));
-                                    })
-                                    .catch(function(err) {
-                                        AndroidBridge.onError(err.toString());
-                                    });
-                            } else {
-                                AndroidBridge.onError("Parser is not a function");
+                            // Fallback: just try the old known name if any
+                            if (typeof parserFunc !== 'function' && typeof timepassbdwebStream === 'function') {
+                                parserFunc = timepassbdwebStream;
                             }
-                        } catch(e) {
-                            AndroidBridge.onError(e.toString());
                         }
-                    </script>
-                </head>
-                <body></body>
-                </html>
+                        
+                        if (typeof parserFunc === 'function') {
+                            parserFunc("$type", "$tmdbId", $seasonArg, $episodeArg)
+                                .then(function(sources) {
+                                    AndroidBridge.onResult(JSON.stringify(sources));
+                                })
+                                .catch(function(err) {
+                                    AndroidBridge.onError(err.toString());
+                                });
+                        } else {
+                            AndroidBridge.onError("Parser is not a function");
+                        }
+                    } catch(e) {
+                        AndroidBridge.onError(e.toString());
+                    }
+                })();
             """.trimIndent()
 
-            webView.loadDataWithBaseURL("file:///android_asset/dummy.html", html, "text/html", "UTF-8", null)
+            webView.evaluateJavascript(script, null)
 
             continuation.invokeOnCancellation {
                 webView.destroy()
