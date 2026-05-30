@@ -413,7 +413,13 @@ object AddonManager {
                 })();
             """.trimIndent()
 
-            webView.evaluateJavascript(script, null)
+            webView.webViewClient = object : android.webkit.WebViewClient() {
+                override fun onPageFinished(view: android.webkit.WebView, url: String) {
+                    super.onPageFinished(view, url)
+                    view.evaluateJavascript(script, null)
+                }
+            }
+            webView.loadDataWithBaseURL("https://streambd.net/", "<html><body></body></html>", "text/html", "UTF-8", null)
 
             continuation.invokeOnCancellation {
                 webView.destroy()
