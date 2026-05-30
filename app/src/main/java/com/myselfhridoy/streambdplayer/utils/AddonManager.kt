@@ -252,9 +252,16 @@ object AddonManager {
                             val body = response.body?.string() ?: ""
                             val status = response.code
                             
+                            val responseHeadersMap = mutableMapOf<String, String>()
+                            response.headers.forEach { (name, value) ->
+                                responseHeadersMap[name] = value
+                            }
+                            val headersJsonStr = gson.toJson(responseHeadersMap)
+                            
                             withContext(Dispatchers.Main) {
                                 val base64Body = android.util.Base64.encodeToString(body.toByteArray(), android.util.Base64.NO_WRAP)
-                                webView.evaluateJavascript("javascript:window.onAndroidFetchResponse('$reqId', $status, '$base64Body');", null)
+                                val safeHeadersJson = android.util.Base64.encodeToString(headersJsonStr.toByteArray(), android.util.Base64.NO_WRAP)
+                                webView.evaluateJavascript("javascript:window.onAndroidFetchResponse('$reqId', $status, '$safeHeadersJson', '$base64Body');", null)
                             }
                         } catch (e: Exception) {
                             withContext(Dispatchers.Main) {
@@ -285,13 +292,21 @@ object AddonManager {
                         };
                         window.originalFetch = window.fetch;
                         window.fetchPromises = {};
-                        window.onAndroidFetchResponse = function(reqId, status, base64Body) {
+                        window.onAndroidFetchResponse = function(reqId, status, headersBase64, base64Body) {
                             var p = window.fetchPromises[reqId];
                             if (p) {
                                 var bodyText = decodeURIComponent(escape(window.atob(base64Body)));
+                                var headersJson = decodeURIComponent(escape(window.atob(headersBase64)));
+                                var headersObj = JSON.parse(headersJson);
                                 var res = {
                                     status: status,
                                     ok: status >= 200 && status < 300,
+                                    headers: {
+                                        get: function(name) {
+                                            var key = Object.keys(headersObj).find(function(k) { return k.toLowerCase() === name.toLowerCase(); });
+                                            return key ? headersObj[key] : null;
+                                        }
+                                    },
                                     text: function() { return Promise.resolve(bodyText); },
                                     json: function() { return Promise.resolve(JSON.parse(bodyText)); }
                                 };
