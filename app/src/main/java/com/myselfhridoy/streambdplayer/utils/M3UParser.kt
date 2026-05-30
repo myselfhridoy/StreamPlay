@@ -140,23 +140,27 @@ object M3UParser {
                 }
 
                 if (cleanUrl.isNotEmpty()) {
-                    channels.add(
-                        Channel(
-                            name = currentName,
-                            logo = currentLogo,
-                            group = currentGroup,
-                            url = cleanUrl,
-                            userAgent = currentUserAgent,
-                            cookie = currentCookie,
-                            httpReferer = currentHttpReferer,
-                            origin = currentOrigin,
-                            tokenUrl = currentTokenUrl,
-                            tokenMatch = currentTokenMatch,
-                            tokenReplace = currentTokenReplace,
-                            tokenId = currentTokenId,
-                            drm = currentDrm
-                        )
-                    )
+                            val isLive = cleanUrl.contains(".m3u8", ignoreCase = true) || 
+                                         cleanUrl.contains(".ts", ignoreCase = true) || 
+                                         cleanUrl.contains("live", ignoreCase = true)
+                            channels.add(
+                                Channel(
+                                    name = currentName,
+                                    logo = currentLogo,
+                                    group = currentGroup,
+                                    url = cleanUrl,
+                                    userAgent = currentUserAgent,
+                                    cookie = currentCookie,
+                                    httpReferer = currentHttpReferer,
+                                    origin = currentOrigin,
+                                    tokenUrl = currentTokenUrl,
+                                    tokenMatch = currentTokenMatch,
+                                    tokenReplace = currentTokenReplace,
+                                    tokenId = currentTokenId,
+                                    drm = currentDrm,
+                                    isLiveEvent = isLive
+                                )
+                            )
                 }
                 resetCurrentChannel()
             }

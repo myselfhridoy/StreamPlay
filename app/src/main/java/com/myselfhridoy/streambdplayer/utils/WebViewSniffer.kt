@@ -329,12 +329,8 @@ object WebViewSniffer {
                         super.onPageFinished(view, url)
                         view?.evaluateJavascript(INTERCEPT_SCRIPT, null)
                         // SPA route change এর জন্য retry
-                        view?.postDelayed({ 
-                            if (!isResolved) view.evaluateJavascript(INTERCEPT_SCRIPT, null)
-                        }, 1500)
-                        view?.postDelayed({ 
-                            if (!isResolved) view.evaluateJavascript(INTERCEPT_SCRIPT, null)
-                        }, 4000)
+                        view?.postDelayed({ view.evaluateJavascript(INTERCEPT_SCRIPT, null) }, 1500)
+                        view?.postDelayed({ view.evaluateJavascript(INTERCEPT_SCRIPT, null) }, 4000)
                         
                         // Inject a script to simulate a click if the player requires interaction
                         view?.evaluateJavascript(
@@ -376,7 +372,8 @@ object WebViewSniffer {
                lowerUrl.contains(".mkv") || 
                lowerUrl.contains(".flv") ||
                lowerUrl.contains(".mpd") ||
-               lowerUrl.contains(".webm")
+               lowerUrl.contains(".webm") ||
+               lowerUrl.contains(".ts")
     }
 
     private fun isAdOrTracker(url: String): Boolean {

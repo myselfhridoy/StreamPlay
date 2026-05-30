@@ -218,6 +218,7 @@ fun PlayerScreen(
             override fun onPlaybackStateChanged(playbackState: Int) {
                 if (playbackState == Player.STATE_READY) {
                     duration = exoPlayer.duration.coerceAtLeast(0L)
+                    currentIsVod = !exoPlayer.isCurrentMediaItemLive
                 }
             }
             override fun onPlayerError(error: PlaybackException) {
