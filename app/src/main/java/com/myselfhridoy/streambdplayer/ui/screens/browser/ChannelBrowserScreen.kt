@@ -131,10 +131,10 @@ fun ChannelBrowserScreen(
                 }
                 is BrowserUiState.Success -> {
                     LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 100.dp),
-                        contentPadding = PaddingValues(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        columns = GridCells.Adaptive(minSize = 80.dp),
+                        contentPadding = PaddingValues(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(state.channels) { channel ->
@@ -282,12 +282,12 @@ fun ChannelItem(channel: Channel, onClick: () -> Unit) {
                 shape = RoundedCornerShape(12.dp)
             )
             .clickable { onClick() }
-            .padding(top = 16.dp, bottom = 12.dp, start = 8.dp, end = 8.dp)
+            .padding(top = 12.dp, bottom = 8.dp, start = 4.dp, end = 4.dp)
     ) {
         // Circular logo container
         Box(
             modifier = Modifier
-                .size(64.dp)
+                .size(56.dp)
                 .clip(androidx.compose.foundation.shape.CircleShape)
                 .background(
                     Brush.linearGradient(
@@ -320,13 +320,13 @@ fun ChannelItem(channel: Channel, onClick: () -> Unit) {
             }
         }
         
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         
         Text(
             text = channel.name,
             color = Color.White,
             fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
