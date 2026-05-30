@@ -184,6 +184,13 @@ object AddonManager {
     ): String = withContext(Dispatchers.Main) {
         suspendCancellableCoroutine { continuation ->
             val webView = WebView(context)
+            
+            continuation.invokeOnCancellation {
+                webView.post {
+                    webView.destroy()
+                }
+            }
+            
             webView.settings.javaScriptEnabled = true
             webView.settings.domStorageEnabled = true
 
@@ -197,6 +204,7 @@ object AddonManager {
                 fun onResult(result: String) {
                     if (continuation.isActive) {
                         continuation.resume(result)
+                        webView.post { webView.destroy() }
                     }
                 }
 
@@ -204,6 +212,7 @@ object AddonManager {
                 fun onError(error: String) {
                     if (continuation.isActive) {
                         continuation.resume("[]")
+                        webView.post { webView.destroy() }
                     }
                 }
 
@@ -249,7 +258,23 @@ object AddonManager {
                             }
                             
                             val response = client.newCall(requestBuilder.build()).execute()
-                            val body = response.body?.string() ?: ""
+                            
+                            val inputStream = response.body?.byteStream()
+                            val buffer = java.io.ByteArrayOutputStream()
+                            val data = ByteArray(8192)
+                            var totalRead = 0
+                            if (inputStream != null) {
+                                var read = inputStream.read(data)
+                                while (read != -1 && totalRead < 5 * 1024 * 1024) {
+                                    buffer.write(data, 0, read)
+                                    totalRead += read
+                                    read = inputStream.read(data)
+                                }
+                                inputStream.close()
+                            }
+                            val bodyBytes = buffer.toByteArray()
+                            val body = String(bodyBytes, Charsets.UTF_8)
+                            
                             val status = response.code
                             
                             val responseHeadersMap = mutableMapOf<String, String>()
