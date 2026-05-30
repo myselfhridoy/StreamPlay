@@ -188,13 +188,6 @@ object AddonManager {
     ): String = withContext(Dispatchers.Main) {
         suspendCancellableCoroutine { continuation ->
             val webView = WebView(context)
-            
-            continuation.invokeOnCancellation {
-                webView.post {
-                    webView.destroy()
-                }
-            }
-            
             webView.settings.javaScriptEnabled = true
             webView.settings.domStorageEnabled = true
 
@@ -277,7 +270,6 @@ object AddonManager {
                                 inputStream.close()
                             }
                             val bodyBytes = buffer.toByteArray()
-                            val body = String(bodyBytes, Charsets.UTF_8)
                             
                             val status = response.code
                             
@@ -290,11 +282,11 @@ object AddonManager {
                             withContext(Dispatchers.Main) {
                                 val base64Body = android.util.Base64.encodeToString(bodyBytes, android.util.Base64.NO_WRAP)
                                 val safeHeadersJson = android.util.Base64.encodeToString(headersJsonStr.toByteArray(), android.util.Base64.NO_WRAP)
-                                webView.evaluateJavascript("javascript:window.onAndroidFetchResponse('$reqId', $status, '$safeHeadersJson', '$base64Body');", null)
+                                webView.evaluateJavascript("javascript:window.onAndroidFetchResponse('" + reqId + "', " + status + ", '" + safeHeadersJson + "', '" + base64Body + "');", null)
                             }
                         } catch (e: Exception) {
                             withContext(Dispatchers.Main) {
-                                webView.evaluateJavascript("javascript:window.onAndroidFetchError('$reqId', '${e.message?.replace("'", "\\'") ?: "Error"}');", null)
+                                webView.evaluateJavascript("javascript:window.onAndroidFetchError('" + reqId + "', '" + (e.message?.replace("'", "\\'") ?: "Error") + "');", null)
                             }
                         }
                     }
@@ -306,18 +298,20 @@ object AddonManager {
 
             val addonCodeBase64 = android.util.Base64.encodeToString(addonCode.toByteArray(), android.util.Base64.NO_WRAP)
 
-            // Inject the cryptoJS and addonCode directly via evaluateJavascript
-            val script = """
-                (function() {
-                    try {
-                        // Polyfill fetch
+            val html = """
+                <html>
+                <head>
+                    <script>
+                        $cryptoJsCode
+                    </script>
+                    <script>
                         window.console = {
                             log: function() { AndroidBridge.log(Array.prototype.slice.call(arguments).join(' ')); },
                             error: function() { AndroidBridge.error(Array.prototype.slice.call(arguments).join(' ')); },
                             warn: function() { AndroidBridge.log(Array.prototype.slice.call(arguments).join(' ')); }
                         };
                         window.originalFetch = window.fetch;
-                        window.fetchPromises = window.fetchPromises || {};
+                        window.fetchPromises = {};
                         window.onAndroidFetchResponse = function(reqId, status, headersBase64, base64Body) {
                             var p = window.fetchPromises[reqId];
                             if (p) {
@@ -361,65 +355,43 @@ object AddonManager {
                             });
                         };
 
-                        // Load CryptoJS if not already defined
-                        if (typeof CryptoJS === 'undefined') {
-                            eval(decodeURIComponent(escape(window.atob("${android.util.Base64.encodeToString(cryptoJsCode.toByteArray(), android.util.Base64.NO_WRAP)}"))));
-                        }
-
-                        var decodedCode = decodeURIComponent(escape(window.atob("$addonCodeBase64")));
-                        
-                        // Try Expo format first (function body returning the parser)
-                        var parserFunc;
                         try {
-                            parserFunc = new Function("CryptoJS", decodedCode)(CryptoJS);
-                        } catch(e) { }
-                        
-                        // If it didn't return a function, try evaluating globally and grabbing by name
-                        if (typeof parserFunc !== 'function') {
-                            // We guess the function name based on the addon name or rely on 'window' injection
-                            eval(decodedCode);
-                            // The user's timepassbdwebStream might be defined globally now
-                            // We can search for the first function that contains 'Stream' or use a known name
-                            if ("$functionName" !== "null" && typeof window["$functionName"] === 'function') {
-                                parserFunc = window["$functionName"];
-                            } else {
-                                for (var key in window) {
-                                    if (typeof window[key] === 'function' && key.toLowerCase().indexOf('stream') !== -1) {
-                                        parserFunc = window[key];
-                                        break;
-                                    }
+                            var decodedCode = decodeURIComponent(escape(window.atob("$addonCodeBase64")));
+                            var parserFunc;
+                            try {
+                                parserFunc = new Function("CryptoJS", decodedCode)(CryptoJS);
+                            } catch(e) {}
+                            
+                            if (typeof parserFunc !== 'function') {
+                                eval(decodedCode);
+                                ${if (!functionName.isNullOrBlank()) "parserFunc = $functionName;" else ""}
+                                if (typeof parserFunc !== 'function') {
+                                    if (typeof resolveStream === 'function') parserFunc = resolveStream;
+                                    else if (typeof resolve === 'function') parserFunc = resolve;
                                 }
                             }
-                            // Fallback: just try the old known name if any
-                            if (typeof parserFunc !== 'function' && typeof timepassbdwebStream === 'function') {
-                                parserFunc = timepassbdwebStream;
+                            
+                            if (typeof parserFunc === 'function') {
+                                parserFunc("$type", "$tmdbId", $seasonArg, $episodeArg)
+                                    .then(function(sources) {
+                                        AndroidBridge.onResult(JSON.stringify(sources));
+                                    })
+                                    .catch(function(err) {
+                                        AndroidBridge.onError(err.toString());
+                                    });
+                            } else {
+                                AndroidBridge.onError("Parser is not a function");
                             }
+                        } catch(e) {
+                            AndroidBridge.onError(e.toString());
                         }
-                        
-                        if (typeof parserFunc === 'function') {
-                            parserFunc("$type", "$tmdbId", $seasonArg, $episodeArg)
-                                .then(function(sources) {
-                                    AndroidBridge.onResult(JSON.stringify(sources));
-                                })
-                                .catch(function(err) {
-                                    AndroidBridge.onError(err.toString());
-                                });
-                        } else {
-                            AndroidBridge.onError("Parser is not a function");
-                        }
-                    } catch(e) {
-                        AndroidBridge.onError(e.toString());
-                    }
-                })();
+                    </script>
+                </head>
+                <body></body>
+                </html>
             """.trimIndent()
 
-            webView.webViewClient = object : android.webkit.WebViewClient() {
-                override fun onPageFinished(view: android.webkit.WebView, url: String) {
-                    super.onPageFinished(view, url)
-                    view.evaluateJavascript(script, null)
-                }
-            }
-            webView.loadDataWithBaseURL("https://streambd.net/", "<html><body></body></html>", "text/html", "UTF-8", null)
+            webView.loadDataWithBaseURL("file:///android_asset/dummy.html", html, "text/html", "UTF-8", null)
 
             continuation.invokeOnCancellation {
                 webView.destroy()
