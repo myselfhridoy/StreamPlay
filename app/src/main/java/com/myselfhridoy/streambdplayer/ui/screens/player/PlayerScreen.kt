@@ -81,11 +81,19 @@ fun PlayerScreen(
 ) {
     val context = LocalContext.current
     
-    val parsedHeaders = remember(headersJson) {
+    var currentMediaUrl by remember { mutableStateOf(mediaUrl) }
+    var currentTitle by remember { mutableStateOf(title) }
+    var currentDrmLicenseUrl by remember { mutableStateOf(drmLicenseUrl) }
+    var currentDrmSchemeUuid by remember { mutableStateOf(drmSchemeUuid) }
+    var currentIsVod by remember { mutableStateOf(isVod) }
+    var currentHeadersJson by remember { mutableStateOf(headersJson) }
+    var currentStreamType by remember { mutableStateOf(streamType) }
+
+    val parsedHeaders = remember(currentHeadersJson) {
         try {
-            if (!headersJson.isNullOrEmpty()) {
+            if (!currentHeadersJson.isNullOrEmpty()) {
                 val type = object : TypeToken<Map<String, String>>() {}.type
-                Gson().fromJson<Map<String, String>>(headersJson, type)
+                Gson().fromJson<Map<String, String>>(currentHeadersJson, type)
             } else emptyMap()
         } catch (e: Exception) {
             emptyMap()
@@ -138,14 +146,14 @@ fun PlayerScreen(
 
     var isSniffing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(mediaUrl, drmLicenseUrl, drmSchemeUuid) {
-        if (!mediaUrl.isNullOrEmpty()) {
-            var finalUri = mediaUrl
+    LaunchedEffect(currentMediaUrl, currentDrmLicenseUrl, currentDrmSchemeUuid) {
+        if (!currentMediaUrl.isNullOrEmpty()) {
+            var finalUri = currentMediaUrl
             var finalHeaders = parsedHeaders
             
-            if (isVod && streamType == "streamPlay") {
+            if (currentIsVod && currentStreamType == "streamPlay") {
                 isSniffing = true
-                val resolved = WebViewSniffer.sniff(context, mediaUrl, finalHeaders)
+                val resolved = WebViewSniffer.sniff(context, currentMediaUrl!!, finalHeaders)
                 if (resolved != null) {
                     finalUri = resolved.url
                     finalHeaders = resolved.headers?.ifEmpty { finalHeaders } ?: finalHeaders
@@ -297,7 +305,7 @@ fun PlayerScreen(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = title,
+                        text = currentTitle,
                         color = Color.White,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
@@ -306,7 +314,7 @@ fun PlayerScreen(
                         modifier = Modifier.weight(1f)
                     )
                     
-                    if (!isVod) {
+                    if (!currentIsVod) {
                         val infiniteTransition = rememberInfiniteTransition()
                         val alpha by infiniteTransition.animateFloat(
                             initialValue = 0.3f,
@@ -378,12 +386,30 @@ fun PlayerScreen(
                                         )
                                         val finalUrl = resolved?.url ?: prevChannel.url
 
-                                        val encodedTitle = android.net.Uri.encode(prevChannel.name)
-                                        val encodedUrl = android.net.Uri.encode(finalUrl)
-                                        val route = "player?url=$encodedUrl&title=$encodedTitle&headers=$headersJson"
-                                        navController.navigate(route) {
-                                            popUpTo("player") { inclusive = true }
+                                        val newDrmType = resolved?.drm?.type ?: prevChannel.drm?.type
+                                        val newDrmLicense = resolved?.drm?.licenseServer ?: prevChannel.drm?.licenseServer
+                                        val newRawKeyPair = resolved?.drm?.rawKeyPair ?: prevChannel.drm?.rawKeyPair
+                                        
+                                        var newDrmLicenseUrl: String? = null
+                                        var newDrmSchemeUuid: String? = null
+                                        if (newDrmType == "widevine" && !newDrmLicense.isNullOrEmpty()) {
+                                            newDrmLicenseUrl = newDrmLicense
+                                            newDrmSchemeUuid = "edef8ba9-79d6-4ace-a3c8-27dcd51d21ed"
+                                        } else if (newDrmType == "clearkey") {
+                                            val license = newRawKeyPair ?: newDrmLicense
+                                            if (!license.isNullOrEmpty()) {
+                                                newDrmLicenseUrl = license
+                                                newDrmSchemeUuid = "e2719d58-a985-b3c9-781a-b030af78d30e"
+                                            }
                                         }
+
+                                        currentMediaUrl = finalUrl
+                                        currentTitle = prevChannel.name
+                                        currentDrmLicenseUrl = newDrmLicenseUrl
+                                        currentDrmSchemeUuid = newDrmSchemeUuid
+                                        currentIsVod = !prevChannel.isLiveEvent
+                                        currentHeadersJson = Gson().toJson(baseHeaders)
+                                        currentStreamType = prevChannel.tokenUrl
                                     }
                                 } else {
                                     Toast.makeText(context, "No previous channel", Toast.LENGTH_SHORT).show()
@@ -402,7 +428,7 @@ fun PlayerScreen(
                         isPrimary = true
                     )
                     
-                    if (isVod) {
+                    if (currentIsVod) {
                         TVButton(
                             icon = Icons.Default.Forward10,
                             onClick = {
@@ -437,12 +463,30 @@ fun PlayerScreen(
                                         )
                                         val finalUrl = resolved?.url ?: nextChannel.url
 
-                                        val encodedTitle = android.net.Uri.encode(nextChannel.name)
-                                        val encodedUrl = android.net.Uri.encode(finalUrl)
-                                        val route = "player?url=$encodedUrl&title=$encodedTitle&headers=$headersJson"
-                                        navController.navigate(route) {
-                                            popUpTo("player") { inclusive = true }
+                                        val newDrmType = resolved?.drm?.type ?: nextChannel.drm?.type
+                                        val newDrmLicense = resolved?.drm?.licenseServer ?: nextChannel.drm?.licenseServer
+                                        val newRawKeyPair = resolved?.drm?.rawKeyPair ?: nextChannel.drm?.rawKeyPair
+                                        
+                                        var newDrmLicenseUrl: String? = null
+                                        var newDrmSchemeUuid: String? = null
+                                        if (newDrmType == "widevine" && !newDrmLicense.isNullOrEmpty()) {
+                                            newDrmLicenseUrl = newDrmLicense
+                                            newDrmSchemeUuid = "edef8ba9-79d6-4ace-a3c8-27dcd51d21ed"
+                                        } else if (newDrmType == "clearkey") {
+                                            val license = newRawKeyPair ?: newDrmLicense
+                                            if (!license.isNullOrEmpty()) {
+                                                newDrmLicenseUrl = license
+                                                newDrmSchemeUuid = "e2719d58-a985-b3c9-781a-b030af78d30e"
+                                            }
                                         }
+
+                                        currentMediaUrl = finalUrl
+                                        currentTitle = nextChannel.name
+                                        currentDrmLicenseUrl = newDrmLicenseUrl
+                                        currentDrmSchemeUuid = newDrmSchemeUuid
+                                        currentIsVod = !nextChannel.isLiveEvent
+                                        currentHeadersJson = Gson().toJson(baseHeaders)
+                                        currentStreamType = nextChannel.tokenUrl
                                     }
                                 } else {
                                     Toast.makeText(context, "No next channel", Toast.LENGTH_SHORT).show()
