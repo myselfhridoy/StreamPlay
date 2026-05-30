@@ -199,14 +199,12 @@ object WebViewSniffer {
                     @android.webkit.JavascriptInterface
                     fun onStreamFound(streamUrl: String, headersJson: String) {
                         // Stream URL এর domain এর cookie নয়,
-                        // পুরো toffeelive.com এর সব cookie নাও
+                        // পুরো parent url এর সব cookie নাও
                         val cdnCookie = CookieManager.getInstance().getCookie(streamUrl)
-                        val parentCookie = CookieManager.getInstance().getCookie("https://toffeelive.com")
+                        val parentCookie = CookieManager.getInstance().getCookie(url)
                         
                         val capturedHeaders = mutableMapOf<String, String>()
                         
-                        // Edge-Cache-Cookie টা .toffeelive.com এ set হয়,
-                        // bldcmprod-cdn.toffeelive.com subdomain তাই পাবে
                         if (!cdnCookie.isNullOrEmpty()) capturedHeaders["Cookie"] = cdnCookie
                         else if (!parentCookie.isNullOrEmpty()) capturedHeaders["Cookie"] = parentCookie
                         
@@ -222,7 +220,7 @@ object WebViewSniffer {
                         } catch (e: Exception) {}
                         
                         // Referer ও দরকার হতে পারে
-                        capturedHeaders["Referer"] = "https://toffeelive.com/"
+                        capturedHeaders["Referer"] = url
                         
                         finish(ResolvedToken(url = streamUrl, headers = capturedHeaders))
                     }
@@ -240,11 +238,11 @@ object WebViewSniffer {
                             val capturedHeaders = request.requestHeaders?.toMutableMap() ?: mutableMapOf()
                             
                             val cookieString = CookieManager.getInstance().getCookie(reqUrl)
-                            val parentCookie = CookieManager.getInstance().getCookie("https://toffeelive.com")
+                            val parentCookie = CookieManager.getInstance().getCookie(url)
                             if (!cookieString.isNullOrEmpty()) capturedHeaders["Cookie"] = cookieString
                             else if (!parentCookie.isNullOrEmpty()) capturedHeaders["Cookie"] = parentCookie
                             
-                            capturedHeaders["Referer"] = "https://toffeelive.com/"
+                            capturedHeaders["Referer"] = url
 
                             finish(ResolvedToken(url = reqUrl, headers = capturedHeaders))
                             return WebResourceResponse("text/plain", "UTF-8", null) // Block further loading
