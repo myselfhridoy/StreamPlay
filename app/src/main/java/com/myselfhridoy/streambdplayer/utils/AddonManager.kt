@@ -146,8 +146,8 @@ object AddonManager {
                     }
 
                     if (jsCode != null) {
-                        // 8 seconds timeout for each addon to prevent hanging
-                        val sourcesJson = withTimeoutOrNull(8000L) {
+                        // 25 seconds timeout for each addon to prevent hanging on complex addons
+                        val sourcesJson = withTimeoutOrNull(25000L) {
                             executeAddonInWebView(context, cryptoJsCode, jsCode, addon.name, addon.url, addon.functionName, type, tmdbId, season, episode)
                         }
                         
