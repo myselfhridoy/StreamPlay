@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.net.URL
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.util.concurrent.TimeUnit
 
 class ChannelBrowserViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow<BrowserUiState>(BrowserUiState.Loading)
@@ -34,7 +36,16 @@ class ChannelBrowserViewModel(application: Application) : AndroidViewModel(appli
                         val uri = Uri.parse(url)
                         getApplication<Application>().contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
                     } else {
-                        URL(url).readText()
+                        val client = OkHttpClient.Builder()
+                            .connectTimeout(15, TimeUnit.SECONDS)
+                            .readTimeout(15, TimeUnit.SECONDS)
+                            .build()
+                        val req = Request.Builder()
+                            .url(url)
+                            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                            .build()
+                        val res = client.newCall(req).execute()
+                        res.body?.string() ?: throw Exception("Empty response from URL")
                     }
                 }
                 val parsed = M3UParser.parseM3U(content)
