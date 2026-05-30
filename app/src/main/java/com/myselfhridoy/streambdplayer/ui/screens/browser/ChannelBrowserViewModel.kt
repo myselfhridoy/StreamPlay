@@ -48,7 +48,7 @@ class ChannelBrowserViewModel(application: Application) : AndroidViewModel(appli
                         res.body?.string() ?: throw Exception("Empty response from URL")
                     }
                 }
-                val parsed = M3UParser.parseM3U(content)
+                val parsed = M3UParser.parsePlaylist(content)
                 allChannels = parsed
                 
                 val uniqueCats = parsed.map { it.group }.distinct().sorted()
