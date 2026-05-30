@@ -253,8 +253,8 @@ object AddonManager {
                             val status = response.code
                             
                             val responseHeadersMap = mutableMapOf<String, String>()
-                            response.headers.forEach { (name, value) ->
-                                responseHeadersMap[name] = value
+                            response.headers.names().forEach { name ->
+                                responseHeadersMap[name] = response.headers.values(name).joinToString(", ")
                             }
                             val headersJsonStr = gson.toJson(responseHeadersMap)
                             
