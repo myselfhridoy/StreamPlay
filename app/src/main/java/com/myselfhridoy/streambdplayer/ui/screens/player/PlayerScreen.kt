@@ -351,7 +351,7 @@ fun PlayerScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    if (isVod) {
+                    if (currentIsVod) {
                         TVButton(
                             icon = Icons.Default.Replay10,
                             onClick = {
