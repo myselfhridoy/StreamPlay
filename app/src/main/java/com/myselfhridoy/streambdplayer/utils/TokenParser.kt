@@ -101,7 +101,7 @@ object TokenParser {
                 }
             } else if (bypass?.content != null) {
                 // Try jsdecode
-                val decoded = JSDecoder.decode(bypass.content)
+                val decoded = JSDecoder.decode(context, bypass.content)
                 if (decoded != null) {
                     var finalUrl = decoded.url
                     if (tokenMatch != null && tokenReplace != null) finalUrl = finalUrl.replace(tokenMatch, tokenReplace)
@@ -131,7 +131,7 @@ object TokenParser {
                 val res = client.newCall(req).execute()
                 if (res.isSuccessful) {
                     val html = res.body?.string() ?: ""
-                    val decoded = JSDecoder.decode(html)
+                    val decoded = JSDecoder.decode(context, html)
                     if (decoded != null) {
                         var finalUrl = decoded.url
                         if (tokenMatch != null && tokenReplace != null) finalUrl = finalUrl.replace(tokenMatch, tokenReplace)

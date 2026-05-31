@@ -1,5 +1,7 @@
 package com.myselfhridoy.streambdplayer.utils
 
+import android.content.Context
+import kotlin.coroutines.resume
 import java.util.regex.Pattern
 
 data class DrmInfo(
@@ -15,7 +17,7 @@ data class JsDecodeResult(
 
 object JSDecoder {
 
-    fun decode(text: String): JsDecodeResult? {
+    suspend fun decode(context: Context, text: String): JsDecodeResult? {
         try {
             var decrypted = ""
 
@@ -44,9 +46,41 @@ object JSDecoder {
                     decrypted = sb.toString()
                 }
             } else {
-                // The eval packer requires a JS engine to unpack.
-                // Note: Porting `new Function(...)` requires QuickJS/Rhino which is omitted here to avoid bloating.
-                // We fallback to regex search if we can't execute JS.
+                // Check for generic eval packer
+                val evalMatch = Pattern.compile("<script>(var\\s+_[0-9a-zA-Z]+=\\[.*?\\];\\s*function\\s+_[0-9a-zA-Z]+\\(.*?\\)\\{.*?\\}\\s*)eval\\((function\\(.*?\\)\\{.*?\\}\\(.*?\\))\\)\\s*</script>").matcher(text)
+                if (evalMatch.find()) {
+                    val setupCode = evalMatch.group(1) ?: ""
+                    val evalBody = evalMatch.group(2) ?: ""
+                    val script = """
+                        (function() {
+                            $setupCode
+                            return $evalBody;
+                        })();
+                    """.trimIndent()
+                    
+                    decrypted = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
+                            try {
+                                val webView = android.webkit.WebView(context)
+                                webView.settings.javaScriptEnabled = true
+                                webView.evaluateJavascript(script) { result ->
+                                    webView.destroy()
+                                    if (continuation.isActive) {
+                                        var finalResult = result
+                                        if (finalResult != null && finalResult.length >= 2 && finalResult.startsWith("\"") && finalResult.endsWith("\"")) {
+                                            finalResult = finalResult.substring(1, finalResult.length - 1)
+                                            // Handle escaped characters returned by evaluateJavascript
+                                            finalResult = finalResult.replace("\\\"", "\"").replace("\\n", "\n").replace("\\\\", "\\")
+                                        }
+                                        continuation.resume(if (finalResult == "null") "" else finalResult ?: "")
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                if (continuation.isActive) continuation.resume("")
+                            }
+                        }
+                    }
+                }
             }
 
             if (decrypted.isNotEmpty()) {
