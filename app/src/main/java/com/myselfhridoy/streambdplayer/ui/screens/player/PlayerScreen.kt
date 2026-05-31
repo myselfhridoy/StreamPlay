@@ -146,7 +146,7 @@ fun PlayerScreen(
 
     var isSniffing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(currentMediaUrl, currentDrmLicenseUrl, currentDrmSchemeUuid) {
+    LaunchedEffect(currentMediaUrl, currentDrmLicenseUrl, currentDrmSchemeUuid, currentHeadersJson) {
         if (!currentMediaUrl.isNullOrEmpty()) {
             var finalUri = currentMediaUrl
             var finalHeaders = parsedHeaders
@@ -171,13 +171,13 @@ fun PlayerScreen(
             val mediaSourceFactory = DefaultMediaSourceFactory(context).setDataSourceFactory(httpDataSourceFactory)
             val mediaItemBuilder = MediaItem.Builder().setUri(finalUri)
             
-            if (!drmLicenseUrl.isNullOrEmpty() && !drmSchemeUuid.isNullOrEmpty()) {
+            if (!currentDrmLicenseUrl.isNullOrEmpty() && !currentDrmSchemeUuid.isNullOrEmpty()) {
                 try {
-                    val drmUuid = UUID.fromString(drmSchemeUuid)
+                    val drmUuid = UUID.fromString(currentDrmSchemeUuid)
                     
-                    if (drmUuid == androidx.media3.common.C.CLEARKEY_UUID && drmLicenseUrl.contains(":")) {
+                    if (drmUuid == androidx.media3.common.C.CLEARKEY_UUID && currentDrmLicenseUrl!!.contains(":")) {
                         // Raw key pair kid_hex:key_hex
-                        val parts = drmLicenseUrl.split(":")
+                        val parts = currentDrmLicenseUrl!!.split(":")
                         if (parts.size == 2) {
                             val kidHex = parts[0]
                             val keyHex = parts[1]
@@ -205,7 +205,7 @@ fun PlayerScreen(
                     } else {
                         mediaItemBuilder.setDrmConfiguration(
                             MediaItem.DrmConfiguration.Builder(drmUuid)
-                                .setLicenseUri(drmLicenseUrl)
+                                .setLicenseUri(currentDrmLicenseUrl)
                                 .build()
                         )
                     }
