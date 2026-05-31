@@ -139,7 +139,9 @@ object TokenParser {
                     }
                 }
             } catch (e: Exception) { e.printStackTrace() }
-            return@withContext null
+            
+            // Fallback to WebViewSniffer if JSDecode fails (e.g. for unknown packers)
+            return@withContext WebViewSniffer.sniff(context, baseUrl, headers, USER_AGENT)
         }
 
         // 3. crichd
