@@ -90,6 +90,15 @@ object TokenParser {
                         }
                         continue
                     }
+                    if (line.startsWith("#EXTHTTP:")) {
+                        try {
+                            val jsonStr = line.substring("#EXTHTTP:".length).trim()
+                            val type = object : com.google.gson.reflect.TypeToken<Map<String, String>>() {}.type
+                            val extHeaders: Map<String, String> = com.google.gson.Gson().fromJson(jsonStr, type)
+                            streamHeaders.putAll(extHeaders)
+                        } catch (e: Exception) {}
+                        continue
+                    }
                     if (!line.startsWith("#")) {
                         streamUrl = line
                         continue
