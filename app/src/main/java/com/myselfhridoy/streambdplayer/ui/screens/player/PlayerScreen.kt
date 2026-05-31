@@ -189,12 +189,17 @@ fun PlayerScreen(
                             val keyBase64 = android.util.Base64.encodeToString(keyBytes, android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or android.util.Base64.NO_WRAP)
                             
                             val clearKeyJson = """{"keys":[{"kty":"oct","k":"$keyBase64","kid":"$kidBase64"}],"type":"temporary"}"""
-                            val dataUri = "data:application/json;base64," + android.util.Base64.encodeToString(clearKeyJson.toByteArray(), android.util.Base64.NO_WRAP)
                             
+                            mediaSourceFactory.setDrmSessionManagerProvider {
+                                val drmCallback = androidx.media3.exoplayer.drm.LocalMediaDrmCallback(clearKeyJson.toByteArray())
+                                androidx.media3.exoplayer.drm.DefaultDrmSessionManager.Builder()
+                                    .setUuidAndExoMediaDrmProvider(drmUuid, androidx.media3.exoplayer.drm.FrameworkMediaDrm.DEFAULT_PROVIDER)
+                                    .build(drmCallback)
+                            }
+                            
+                            // Tell ExoPlayer this item is DRM protected
                             mediaItemBuilder.setDrmConfiguration(
-                                MediaItem.DrmConfiguration.Builder(drmUuid)
-                                    .setLicenseUri(dataUri)
-                                    .build()
+                                MediaItem.DrmConfiguration.Builder(drmUuid).build()
                             )
                         }
                     } else {
